@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Error al iniciar sesión' 
+        error: error.message || 'Error al iniciar sesión' 
       };
     }
   };
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Error al registrarse' 
+        error: error.message || 'Error al registrarse' 
       };
     }
   };

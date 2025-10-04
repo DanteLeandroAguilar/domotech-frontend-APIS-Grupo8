@@ -25,6 +25,13 @@ export const CartProvider = ({ children }) => {
       setCart(data);
     } catch (error) {
       console.error('Error al cargar carrito:', error);
+      // Inicializar carrito vacío en caso de error
+      setCart({
+        id: 1,
+        items: [],
+        total: 0,
+        itemCount: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -36,9 +43,10 @@ export const CartProvider = ({ children }) => {
       setCart(updatedCart);
       return { success: true };
     } catch (error) {
+      console.error('Error al actualizar carrito:', error);
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Error al actualizar carrito' 
+        error: error.message || 'Error al actualizar carrito' 
       };
     }
   };
@@ -61,6 +69,15 @@ export const CartProvider = ({ children }) => {
     return cart.items.reduce((total, item) => total + (item.price * item.amount), 0);
   };
 
+  const clearCart = () => {
+    setCart({
+      id: 1,
+      items: [],
+      total: 0,
+      itemCount: 0
+    });
+  };
+
   const value = {
     cart,
     loading,
@@ -70,6 +87,7 @@ export const CartProvider = ({ children }) => {
     removeFromCart,
     getCartItemsCount,
     getCartTotal,
+    clearCart,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

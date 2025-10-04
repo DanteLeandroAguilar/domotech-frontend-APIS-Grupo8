@@ -1,43 +1,47 @@
  
-import api from '../axios';
+import { getProductImages, mockImages, simulateApiDelay } from '../../data/mockData';
 
 export const imagesAPI = {
   // POST /api/productos/{productId}/images - Subir imagen (solo SELLER)
   upload: async (productId, formData) => {
-    const response = await api.post(`/api/productos/${productId}/images`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    await simulateApiDelay();
+    // Simular subida de imagen
+    const newImage = {
+      imageId: `img_${Date.now()}`,
+      productId: parseInt(productId),
+      url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop',
+      isPrincipal: false
+    };
+    return newImage;
   },
 
   // GET /api/productos/{productId}/images - Obtener todas las imágenes del producto
   getByProduct: async (productId) => {
-    const response = await api.get(`/api/productos/${productId}/images`);
-    return response.data;
+    await simulateApiDelay();
+    return getProductImages(productId);
   },
 
   // GET /api/productos/{productId}/images/principal - Obtener imagen principal
   getPrincipal: async (productId) => {
-    const response = await api.get(`/api/productos/${productId}/images/principal`);
-    return response.data;
+    await simulateApiDelay();
+    const images = getProductImages(productId);
+    return images.find(img => img.isPrincipal) || images[0] || null;
   },
 
   // GET /api/images/{imageId}/download - URL para visualizar imagen
   getImageUrl: (imageId) => {
-    return `${import.meta.env.VITE_API_URL}/api/images/${imageId}/download`;
+    return mockImages[imageId] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop';
   },
 
   // PUT /api/images/{imageId}/principal - Marcar como principal (solo SELLER)
   markAsPrincipal: async (imageId) => {
-    const response = await api.put(`/api/images/${imageId}/principal`);
-    return response.data;
+    await simulateApiDelay();
+    return { message: 'Imagen marcada como principal' };
   },
 
   // DELETE /api/images/{imageId} - Eliminar imagen (solo SELLER)
   delete: async (imageId) => {
-    const response = await api.delete(`/api/images/${imageId}`);
-    return response.data;
+    await simulateApiDelay();
+    return { message: 'Imagen eliminada correctamente' };
   },
 };
