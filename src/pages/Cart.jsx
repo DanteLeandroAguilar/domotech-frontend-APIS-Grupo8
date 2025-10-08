@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { Header } from '../components/common/Header';
-import { Footer } from '../components/common/Footer';
 import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
@@ -20,7 +19,6 @@ const Cart = () => {
         <main className="flex-grow">
           <Loading message="Cargando carrito..." />
         </main>
-        <Footer />
       </div>
     );
   }
@@ -58,9 +56,10 @@ const Cart = () => {
             </div>
           </div>
         )}
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+              Carrito de Compras
+            </h1>
       </main>
-
-      <Footer />
     </div>
   );
 };

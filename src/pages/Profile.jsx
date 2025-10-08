@@ -1,5 +1,4 @@
 import { Header } from '../components/common/Header';
-import { Footer } from '../components/common/Footer';
 import { useAuth } from '../hooks/useAuth';
 
 const Profile = () => {
@@ -38,8 +37,6 @@ const Profile = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

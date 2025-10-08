@@ -9,6 +9,35 @@ body {
   font-family: 'Space Grotesk', sans-serif;
 }
 
+/* Global app background matching 'Productos Destacados' */
+body {
+  background-color: #9FADBF;
+}
+
+/* Utility to match existing bg-background-light usages */
+.bg-background-light {
+  background-color: #9FADBF;
+}
+
+/* Preserve a dark alternative when the page is in dark mode */
+.dark .bg-background-light {
+  background-color: #1f2937; /* tailwind gray-800 */
+}
+
+/* Product card colored shadow on hover (uses rgba of #03588C) */
+.product-card.group:hover {
+  box-shadow: 0 10px 15px -3px rgba(6, 29, 159, 0.25), 0 4px 6px -4px rgba(6, 41, 165, 0.12);
+}
+
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Buttons: on hover use DomoTech brand color (#548DBF) for primary buttons */
+.bg-primary:hover,
+.hover\:bg-primary\/90:hover,
+.btn-primary-hover:hover {
+  background-color: #0A58BF !important;
+  color: #ffffff !important;
+  border-color: #0A58BF !important;
 }

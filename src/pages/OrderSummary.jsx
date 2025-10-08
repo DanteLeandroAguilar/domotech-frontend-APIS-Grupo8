@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/common/Header';
-import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
 import { ordersAPI } from '../api/endpoints/orders';
 import { formatPrice, formatDate } from '../utils/formatters';
@@ -124,8 +123,6 @@ const OrderSummary = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

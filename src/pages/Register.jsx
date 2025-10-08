@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../components/common/Header';
-import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
 import { useAuth } from '../hooks/useAuth';
 
@@ -58,13 +57,16 @@ const Register = () => {
       
       <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
+          <div className="flex justify-center">
+            <img src="/photo-domotech.png" alt="DomoTech" className="w-24 h-24 rounded-full object-cover shadow-md" />
+          </div>
           <div>
-            <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <h2 className="mt-2 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
               Crear una cuenta
             </h2>
             <p className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
-              O{' '}
-              <Link to="/login" className="font-medium text-primary hover:text-primary/80">
+              o{' '}
+              <Link to="/login" className="font-medium text-primary text-white hover:text-primary/80 transition-colors">
                 inicia sesión si ya tienes cuenta
               </Link>
             </p>
@@ -161,8 +163,6 @@ const Register = () => {
           </form>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

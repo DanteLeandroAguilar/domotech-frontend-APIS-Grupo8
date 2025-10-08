@@ -132,7 +132,7 @@ const ProductDetail = () => {
                   <span className="text-xl font-medium text-gray-400 line-through">
                     {formatPrice(product.price)}
                   </span>
-                  <span className="text-sm font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
+                  <span className="text-sm font-bold bg-green-500/10 px-2 py-1 rounded-full" style={{color:'#00FF7F'}}>
                     {discountPercentage}% OFF
                   </span>
                 </>
@@ -142,8 +142,8 @@ const ProductDetail = () => {
             <div className="flex items-center gap-2 mb-6">
               {product.stock > 0 ? (
                 <>
-                  <span className="material-symbols-outlined text-green-500">check_circle</span>
-                  <p className="text-green-500 font-semibold">
+                  <span className="material-symbols-outlined" style={{color:'#03A63C'}}>check_circle</span>
+                  <p className="font-semibold" style={{color:'#03A63C'}}>
                     En Stock ({product.stock} disponibles)
                   </p>
                 </>

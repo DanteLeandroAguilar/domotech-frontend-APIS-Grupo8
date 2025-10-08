@@ -34,7 +34,7 @@ export const ProductCard = ({ product }) => {
   return (
     <Link 
       to={`/product/${product.productId}`}
-      className="bg-background-light dark:bg-gray-800/50 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
+      className="product-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
     >
       <div className="relative">
         <div 
