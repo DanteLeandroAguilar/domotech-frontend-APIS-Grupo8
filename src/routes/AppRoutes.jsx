@@ -31,7 +31,7 @@ export const AppRoutes = () => {
         <Route
           path="/cart"
           element={
-            <PrivateRoute requiredRole="BUYER">
+            <PrivateRoute>
               <Cart />
             </PrivateRoute>
           }

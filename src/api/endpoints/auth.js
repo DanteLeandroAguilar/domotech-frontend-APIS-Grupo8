@@ -16,7 +16,7 @@ export const authAPI = {
     const newUser = {
       id: Date.now(),
       ...userData,
-      role: 'CUSTOMER', // Por defecto es cliente
+      role: 'BUYER', // Por defecto es cliente
       isActive: true
     };
 

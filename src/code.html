@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DomoTech - Carrito de Compras</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#0d7ff2",
+              "background-light": "#f5f7f8",
+              "background-dark": "#101922",
+            },
+            fontFamily: {
+              display: ["Space Grotesk"],
+            },
+            borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
+          },
+        },
+      };
+    </script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-800 dark:text-gray-200">
+<div class="flex flex-col min-h-screen">
+<header class="border-b border-gray-200 dark:border-gray-800">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex h-16 items-center justify-between">
+<div class="flex items-center gap-8">
+<a class="flex items-center gap-2 text-gray-900 dark:text-white" href="#">
+<span class="material-symbols-outlined text-primary text-3xl">home_automation</span>
+<span class="text-xl font-bold">DomoTech</span>
+</a>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors" href="#">Inicio</a>
+<a class="text-sm font-medium text-primary dark:text-primary" href="#">Productos</a>
+<a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors" href="#">Ofertas</a>
+<a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors" href="#">Contacto</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">search</span>
+<input class="w-full rounded-lg bg-gray-100 dark:bg-gray-800/50 pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 border border-transparent focus:border-primary/30" placeholder="Buscar productos..." type="text"/>
+</div>
+<button class="relative rounded-lg p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">3</span>
+</button>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+<div class="lg:col-span-2">
+<h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Carrito de Compras</h1>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800">
+<img alt="Sensor de Movimiento" class="w-20 h-20 object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM9Wps0OFLdpsrYHe29lFyFrgFr7PnxLOx_f_zVRDACtK-hRs9qjJfrE4TfOqFYUZJO2QFLoahR6NOAuNhrl6AU-R0W1DDU-57esHVxz0eYJmzIIa0F2obExxCyOvLvwT3bibX7MJDiDWSBVr0XEIGyWq-nZl1662-swTfD8shiNJhAycS_fqpmQX4NqKyo69WFASZRPjzF2xcdILTPDOamfH2td9dplX_ehohxFhvs3Z7NeZwD9qO7EC5Lx3K_QBOsK9Ao0SqyaZg"/>
+<div class="flex-grow">
+<h3 class="font-bold text-gray-900 dark:text-white">Sensor de Movimiento Inteligente</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">$49.99</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50">
+<span class="material-symbols-outlined text-lg">remove</span>
+</button>
+<span class="w-8 text-center font-medium">2</span>
+<button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+<p class="w-24 text-right font-semibold text-gray-900 dark:text-white">$99.98</p>
+<button class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800">
+<img alt="Bombilla LED" class="w-20 h-20 object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4GesK3ewSjbuRfZdwD3fXDZ-Nx53EAnX7q9CW1GbMlUpa7J4WMkRjaaAcTKiE-DuhXWt0zQTzCbobAlXcEFKXIDZJB8d0Dj_bo4KKkpMrdW23jLTosEsiE9GbKScSxPvaxqeFCDZgk8Ru5zQy6FTzO0QVQtG5WFFdRReYr4Uo6HHyAuzQ_6s7fAt1LKPXQtWFE4BQH9xHelSrc5-pK59UpO5SlB8Q4ttmUEfswlWnI9HuyrH45wzFA3ukRzs4VNESGcLpjewkljKf"/>
+<div class="flex-grow">
+<h3 class="font-bold text-gray-900 dark:text-white">Bombilla LED Regulable</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">$19.99</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50">
+<span class="material-symbols-outlined text-lg">remove</span>
+</button>
+<span class="w-8 text-center font-medium">4</span>
+<button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+<p class="w-24 text-right font-semibold text-gray-900 dark:text-white">$79.96</p>
+<button class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800">
+<img alt="Cerradura Inteligente" class="w-20 h-20 object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmgqOfcSHZc-CbCbNgblMxvPIfpglwTOkQRwa_6eu8-9RV4pX2KYj_JjNE3_MXdf-jQEV1XaVXXGL7MTmNUtI3dZKt4RMyITxi0c4KgHIBBystUv4GgQws_XYiLFRaNZcX22QcqXV4od9fH0bwWypHOrLVFTtYMyBFdukOriXCB4ND_RcgRWjE8dcxpCqPXQZ6W3Q-GJUugifSRipo1jJKLHn_Caw5mcTxoQAKNJjldwzfhQStFi64lD7FVfgBkt98stHjZ_1qbl7g"/>
+<div class="flex-grow">
+<h3 class="font-bold text-gray-900 dark:text-white">Cerradura de Puerta Inteligente</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">$149.99</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50">
+<span class="material-symbols-outlined text-lg">remove</span>
+</button>
+<span class="w-8 text-center font-medium">1</span>
+<button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+<p class="w-24 text-right font-semibold text-gray-900 dark:text-white">$149.99</p>
+<button class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<div class="mt-6 flex justify-end">
+<button class="text-sm font-medium text-red-600 dark:text-red-500 hover:text-red-800 dark:hover:text-red-400">
+                Vaciar Carrito
+              </button>
+</div>
+</div>
+<div class="lg:col-span-1">
+<div class="sticky top-24">
+<div class="rounded-xl bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 p-6">
+<h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Resumen del Pedido</h2>
+<div class="space-y-3">
+<div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+<span>Subtotal</span>
+<span>$329.93</span>
+</div>
+<div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+<span>Descuentos</span>
+<span class="text-green-600 dark:text-green-400">-$20.00</span>
+</div>
+<div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+<div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+<span>Total</span>
+<span>$309.93</span>
+</div>
+</div>
+<button class="mt-6 w-full flex items-center justify-center gap-2 rounded-lg bg-primary py-3 px-4 text-base font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all">
+<span>Proceder al Checkout</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>
