@@ -3,6 +3,21 @@ const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4003';
 // Rutas públicas que no requieren token
 const publicRoutes = ['/auth/register', '/auth/authenticate'];
 
+// Función helper para construir query parameters
+const buildQueryString = (params) => {
+  if (!params || Object.keys(params).length === 0) return '';
+  
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      queryParams.append(key, value);
+    }
+  });
+  
+  const queryString = queryParams.toString();
+  return queryString ? `?${queryString}` : '';
+};
+
 // Función helper para verificar si una URL es pública
 const isPublicRoute = (url) => {
   console.log('Verificando ruta pública para URL:', url);
@@ -62,45 +77,55 @@ const handleResponse = (response) => {
 // Objeto API con métodos HTTP
 const api = {
   get: (url, options = {}) => {
-    return fetch(`${baseURL}${url}`, {
+    const queryString = buildQueryString(options.params);
+    const fullUrl = `${baseURL}${url}${queryString}`;
+    
+    return fetch(fullUrl, {
       method: 'GET',
       headers: createHeaders(url, options.headers),
-      ...options,
     }).then(handleResponse);
   },
 
   post: (url, data, options = {}) => {
-    return fetch(`${baseURL}${url}`, {
+    const queryString = buildQueryString(options.params);
+    const fullUrl = `${baseURL}${url}${queryString}`;
+    
+    return fetch(fullUrl, {
       method: 'POST',
       headers: createHeaders(url, options.headers),
       body: JSON.stringify(data),
-      ...options,
     }).then(handleResponse);
   },
 
   put: (url, data, options = {}) => {
-    return fetch(`${baseURL}${url}`, {
+    const queryString = buildQueryString(options.params);
+    const fullUrl = `${baseURL}${url}${queryString}`;
+    
+    return fetch(fullUrl, {
       method: 'PUT',
       headers: createHeaders(url, options.headers),
       body: JSON.stringify(data),
-      ...options,
     }).then(handleResponse);
   },
 
   patch: (url, data, options = {}) => {
-    return fetch(`${baseURL}${url}`, {
+    const queryString = buildQueryString(options.params);
+    const fullUrl = `${baseURL}${url}${queryString}`;
+    
+    return fetch(fullUrl, {
       method: 'PATCH',
       headers: createHeaders(url, options.headers),
-      body: JSON.stringify(data),
-      ...options,
+      body: data ? JSON.stringify(data) : undefined,
     }).then(handleResponse);
   },
 
   delete: (url, options = {}) => {
-    return fetch(`${baseURL}${url}`, {
+    const queryString = buildQueryString(options.params);
+    const fullUrl = `${baseURL}${url}${queryString}`;
+    
+    return fetch(fullUrl, {
       method: 'DELETE',
       headers: createHeaders(url, options.headers),
-      ...options,
     }).then(handleResponse);
   },
 };

@@ -16,9 +16,9 @@ export const productsAPI = {
   },
 
   // GET /api/products/search - Búsqueda de productos
-  search: async (name, page = 0, size = 12) => {
+  search: async (term, page = 0, size = 12) => {
     const response = await api.get('/api/products/search', {
-      params: { name, page, size }
+      params: { term, page, size }
     });
     return response;
   },
@@ -67,7 +67,6 @@ export const productsAPI = {
     params.sortDirection = sortDirection;
     
     const response = await api.get('/api/products/filter', { params });
-    debugger;
     return response;
   },
 

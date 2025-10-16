@@ -25,8 +25,6 @@ export const useProducts = (filters = {}) => {
       
       if (filters.search) {
         data = await productsAPI.search(filters.search, pagination.page, pagination.size);
-      } else if (filters.categoryId) {
-        data = await productsAPI.getByCategory(filters.categoryId, pagination.page, pagination.size);
       } else if (Object.keys(filters).length > 0) {
         data = await productsAPI.filter(filters, pagination.page, pagination.size);
       } else {
