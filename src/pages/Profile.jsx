@@ -1,8 +1,15 @@
+import { useState, useEffect } from 'react';
 import { Header } from '../components/common/Header';
-import { useAuth } from '../hooks/useAuth';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">

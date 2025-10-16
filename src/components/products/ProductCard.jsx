@@ -1,14 +1,27 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { formatPrice, calculateDiscountPercentage } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
-import { useAuth } from '../../hooks/useAuth';
-import { useCart } from '../../hooks/useCart';
-import { useState } from 'react';
+import { cartAPI } from '../../api/endpoints/cart';
 
 export const ProductCard = ({ product }) => {
-  const { isAuthenticated, isSeller } = useAuth();
-  const { addToCart } = useCart();
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const isSeller = () => {
+    return user?.role === 'SELLER';
+  };
 
   const imageUrl = product.principalImage 
     ? imagesAPI.getImageUrl(product.principalImage.imageId)
@@ -22,19 +35,20 @@ export const ProductCard = ({ product }) => {
     if (!isAuthenticated || isSeller()) return;
 
     setLoading(true);
-    const result = await addToCart(product.productId, 1);
-    setLoading(false);
-
-    if (result.success) {
-      // Mostrar notificación de éxito (puedes agregar toast aquí)
+    try {
+      await cartAPI.updateProductAmount(product.productId, 1);
       console.log('Producto agregado al carrito');
+    } catch (error) {
+      console.error('Error al agregar al carrito:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Link 
       to={`/product/${product.productId}`}
-      className="product-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
+      className="product-card bg-white dark:bg-gray-400 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
     >
       <div className="relative">
         <div 

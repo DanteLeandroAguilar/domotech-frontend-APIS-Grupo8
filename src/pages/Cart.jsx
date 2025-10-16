@@ -1,20 +1,44 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '../components/common/Header';
 import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
-import { useCart } from '../hooks/useCart';
+import { cartAPI } from '../api/endpoints/cart';
 
 const Cart = () => {
-  const { cart, loading, loadCart, clearCart } = useCart();
+  const [cart, setCart] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadCart();
   }, []);
 
+  const loadCart = async () => {
+    try {
+      setLoading(true);
+      const data = await cartAPI.getMyCart();
+      setCart(data);
+    } catch (error) {
+      console.error('Error al cargar carrito:', error);
+      setCart({
+        id: 1,
+        items: [],
+        total: 0,
+        itemCount: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClearCart = async () => {
     if (window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) {
-      await clearCart();
+      setCart({
+        id: 1,
+        items: [],
+        total: 0,
+        itemCount: 0
+      });
     }
   };
 
@@ -62,7 +86,7 @@ const Cart = () => {
               
               <div className="space-y-4">
                 {cart.items.map((item) => (
-                  <CartItem key={item.id || item.productId} item={item} />
+                  <CartItem key={item.id || item.productId} item={item} onUpdate={loadCart} />
                 ))}
               </div>
 
@@ -82,9 +106,6 @@ const Cart = () => {
             </div>
           </div>
         )}
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-              Carrito de Compras
-            </h1>
       </main>
     </div>
   );

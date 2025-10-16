@@ -7,26 +7,40 @@ import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
-import { useAuth } from '../hooks/useAuth';
-import { useCart } from '../hooks/useCart';
+import { cartAPI } from '../api/endpoints/cart';
 import { formatPrice, calculateDiscountPercentage } from '../utils/formatters';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, isSeller } = useAuth();
-  const { addToCart } = useCart();
   
   const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    loadAuthData();
     loadProduct();
     loadImages();
   }, [id]);
+
+  const loadAuthData = () => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+      setIsAuthenticated(true);
+    }
+  };
+
+  const isSeller = () => {
+    return user?.role === 'SELLER';
+  };
 
   const loadProduct = async () => {
     try {
@@ -55,13 +69,13 @@ const ProductDetail = () => {
     }
 
     setAddingToCart(true);
-    const result = await addToCart(product.productId, quantity);
-    setAddingToCart(false);
-
-    if (result.success) {
+    try {
+      await cartAPI.updateProductAmount(product.productId, quantity);
       alert('Producto agregado al carrito');
-    } else {
-      alert(result.error || 'Error al agregar al carrito');
+    } catch (error) {
+      alert(error.message || 'Error al agregar al carrito');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -100,12 +114,12 @@ const ProductDetail = () => {
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Galería de imágenes */}
+          
           <div>
             <ProductGallery images={images} />
           </div>
 
-          {/* Información del producto */}
+          
           <div>
             <div className="flex items-center text-sm mb-4">
               <span className="text-gray-500 dark:text-gray-400">
@@ -129,10 +143,10 @@ const ProductDetail = () => {
               </span>
               {discountPercentage > 0 && (
                 <>
-                  <span className="text-xl font-medium text-gray-400 line-through">
+                  <span className="text-xl font-medium text-gray-600 line-through">
                     {formatPrice(product.price)}
                   </span>
-                  <span className="text-sm font-bold bg-green-500/10 px-2 py-1 rounded-full" style={{color:'#00FF7F'}}>
+                  <span className="text-sm font-bold bg-green-500/30 px-2 py-1 rounded-full" style={{color:'#00FF7F'}}>
                     {discountPercentage}% OFF
                   </span>
                 </>

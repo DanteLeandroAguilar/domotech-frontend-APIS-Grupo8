@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
-import { useCart } from '../../hooks/useCart';
+import { cartAPI } from '../../api/endpoints/cart';
 
-export const CartItem = ({ item }) => {
-  const { updateProductAmount, removeFromCart } = useCart();
+export const CartItem = ({ item, onUpdate }) => {
   const [loading, setLoading] = useState(false);
 
   const imageUrl = item.product?.principalImage
@@ -13,22 +12,40 @@ export const CartItem = ({ item }) => {
 
   const handleIncrease = async () => {
     setLoading(true);
-    await updateProductAmount(item.productId, item.amount + 1);
-    setLoading(false);
+    try {
+      await cartAPI.updateProductAmount(item.productId, item.amount + 1);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error al actualizar cantidad:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDecrease = async () => {
     if (item.amount > 1) {
       setLoading(true);
-      await updateProductAmount(item.productId, item.amount - 1);
-      setLoading(false);
+      try {
+        await cartAPI.updateProductAmount(item.productId, item.amount - 1);
+        if (onUpdate) onUpdate();
+      } catch (error) {
+        console.error('Error al actualizar cantidad:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const handleRemove = async () => {
     setLoading(true);
-    await removeFromCart(item.productId);
-    setLoading(false);
+    try {
+      await cartAPI.updateProductAmount(item.productId, 0);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error al eliminar producto:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const subtotal = item.price * item.amount;

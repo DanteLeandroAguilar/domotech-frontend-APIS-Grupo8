@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { useCart } from '../hooks/useCart';
+import { cartAPI } from '../api/endpoints/cart';
 import { ordersAPI } from '../api/endpoints/orders';
 import { formatPrice } from '../utils/formatters';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, getCartTotal } = useCart();
+  const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -19,6 +19,24 @@ const Checkout = () => {
     zipCode: '',
     paymentMethod: 'credit_card',
   });
+
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  const loadCart = async () => {
+    try {
+      const data = await cartAPI.getMyCart();
+      setCart(data);
+    } catch (error) {
+      console.error('Error al cargar carrito:', error);
+    }
+  };
+
+  const getCartTotal = () => {
+    if (!cart || !cart.items) return 0;
+    return cart.items.reduce((total, item) => total + (item.price * item.amount), 0);
+  };
 
   const handleChange = (e) => {
     setFormData({

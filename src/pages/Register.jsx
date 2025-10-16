@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { useAuth } from '../hooks/useAuth';
+import { authAPI } from '../api/endpoints/auth';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -35,20 +34,20 @@ const Register = () => {
 
     setLoading(true);
 
-    const result = await register({
-      username: formData.username,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role,
-    });
-
-    if (result.success) {
+    try {
+      const data = await authAPI.register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
+      authAPI.saveAuth(data.token, data.user);
       navigate('/');
-    } else {
-      setError(result.error);
+    } catch (error) {
+      setError(error.message || 'Error al registrarse');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (

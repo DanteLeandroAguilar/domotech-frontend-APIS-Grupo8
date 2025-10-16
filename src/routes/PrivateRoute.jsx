@@ -1,8 +1,23 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useState, useEffect } from 'react';
 
 export const PrivateRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setIsAuthenticated(true);
+    }
+    
+    setLoading(false);
+  }, []);
 
   if (loading) {
     return (

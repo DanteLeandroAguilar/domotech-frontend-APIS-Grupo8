@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { useAuth } from '../hooks/useAuth';
+import { authAPI } from '../api/endpoints/auth';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -26,15 +25,15 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    const result = await login(formData);
-
-    if (result.success) {
+    try {
+      const data = await authAPI.login(formData);
+      authAPI.saveAuth(data.token, data.user);
       navigate('/');
-    } else {
-      setError(result.error);
+    } catch (error) {
+      setError(error.message || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (

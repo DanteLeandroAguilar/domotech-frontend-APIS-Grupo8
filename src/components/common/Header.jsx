@@ -1,13 +1,52 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { useCart } from '../../hooks/useCart';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { authAPI } from '../../api/endpoints/auth';
+import { cartAPI } from '../../api/endpoints/cart';
 
 export const Header = () => {
-  const { isAuthenticated, user, logout, isSeller } = useAuth();
-  const { getCartItemsCount } = useCart();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [cartItemsCount, setCartItemsCount] = useState(0);
+
+  useEffect(() => {
+    loadAuthData();
+    if (isAuthenticated) {
+      loadCartCount();
+    }
+  }, [isAuthenticated]);
+
+  const loadAuthData = () => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setIsAuthenticated(true);
+    }
+  };
+
+  const loadCartCount = async () => {
+    try {
+      const data = await cartAPI.getMyCart();
+      if (data && data.items) {
+        const count = data.items.reduce((total, item) => total + item.amount, 0);
+        setCartItemsCount(count);
+      }
+    } catch (error) {
+      console.error('Error al cargar carrito:', error);
+    }
+  };
+
+  const isSeller = () => {
+    return user?.role === 'SELLER';
+  };
+
+  const isBuyer = () => {
+    return user?.role === 'BUYER';
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -17,7 +56,10 @@ export const Header = () => {
   };
 
   const handleLogout = () => {
-    logout();
+    authAPI.logout();
+    setUser(null);
+    setIsAuthenticated(false);
+    setCartItemsCount(0);
     navigate('/');
   };
 
@@ -69,12 +111,12 @@ export const Header = () => {
             </form>
 
             {/* Carrito (solo para compradores autenticados) */}
-            {isAuthenticated && !isSeller() && (
+            {isAuthenticated && isBuyer() && (
               <Link to="/cart" className="relative rounded-lg p-2 text-white dark:text-gray-300 hover:text-yellow-500 transition-colors">
                 <span className="material-symbols-outlined">shopping_cart</span>
-                {getCartItemsCount() > 0 && (
+                {cartItemsCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    {getCartItemsCount()}
+                    {cartItemsCount}
                   </span>
                 )}
               </Link>
