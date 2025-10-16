@@ -6,21 +6,19 @@ import { cartAPI } from '../../api/endpoints/cart';
 
 export const ProductCard = ({ product }) => {
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
     
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+    if (token) {
       setIsAuthenticated(true);
     }
   }, []);
 
   const isSeller = () => {
-    return user?.role === 'SELLER';
+    // TODO: Obtener el rol del usuario desde el token JWT decodificado
+    return false;
   };
 
   const imageUrl = product.principalImage 
@@ -48,7 +46,7 @@ export const ProductCard = ({ product }) => {
   return (
     <Link 
       to={`/product/${product.productId}`}
-      className="product-card bg-white dark:bg-gray-400 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
+      className="product-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
     >
       <div className="relative">
         <div 

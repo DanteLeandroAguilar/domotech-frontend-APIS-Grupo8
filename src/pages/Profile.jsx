@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Header } from '../components/common/Header';
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
     }
   }, []);
 
@@ -25,13 +25,10 @@ const Profile = () => {
             </div>
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {user?.username}
+                Mi Perfil
               </h1>
-              <p className="mt-1 text-gray-500 dark:text-gray-400">
-                {user?.email}
-              </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Rol: {user?.role === 'BUYER' ? 'Comprador' : 'Vendedor'}
+                {isAuthenticated ? 'Sesión activa' : 'No autenticado'}
               </p>
             </div>
           </div>
@@ -40,6 +37,9 @@ const Profile = () => {
             <h2 className="text-xl font-bold mb-4">Información del Perfil</h2>
             <p className="text-gray-600 dark:text-gray-400">
               Aquí podrás ver y editar tu información personal en futuras actualizaciones.
+            </p>
+            <p className="mt-4 text-sm text-gray-500 dark:text-gray-500">
+              Nota: La información del usuario se obtendrá del token JWT en futuras versiones.
             </p>
           </div>
         </div>

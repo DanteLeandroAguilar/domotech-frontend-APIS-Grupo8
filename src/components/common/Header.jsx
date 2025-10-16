@@ -6,7 +6,6 @@ import { cartAPI } from '../../api/endpoints/cart';
 export const Header = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [cartItemsCount, setCartItemsCount] = useState(0);
 
@@ -19,11 +18,8 @@ export const Header = () => {
 
   const loadAuthData = () => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
     
-    if (token && userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+    if (token) {
       setIsAuthenticated(true);
     }
   };
@@ -41,11 +37,13 @@ export const Header = () => {
   };
 
   const isSeller = () => {
-    return user?.role === 'SELLER';
+    // TODO: Obtener el rol del usuario desde el token JWT decodificado
+    return false;
   };
 
   const isBuyer = () => {
-    return user?.role === 'BUYER';
+    // TODO: Obtener el rol del usuario desde el token JWT decodificado
+    return true;
   };
 
   const handleSearch = (e) => {
@@ -57,7 +55,6 @@ export const Header = () => {
 
   const handleLogout = () => {
     authAPI.logout();
-    setUser(null);
     setIsAuthenticated(false);
     setCartItemsCount(0);
     navigate('/');
@@ -126,7 +123,7 @@ export const Header = () => {
             {isAuthenticated ? (
               <div className="flex items-center gap-7">
                 <Link to="/profile" className="hidden sm:block text-sm font-medium text-white hover:text-orange-500 transition-colors">
-                  {user?.username}
+                  Mi Perfil
                 </Link>
                 <button
                   onClick={handleLogout}

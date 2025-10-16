@@ -27,7 +27,7 @@ const Login = () => {
 
     try {
       const data = await authAPI.login(formData);
-      authAPI.saveAuth(data.token, data.user);
+      authAPI.saveAuth(data.access_token);
       navigate('/');
     } catch (error) {
       setError(error.message || 'Error al iniciar sesión');

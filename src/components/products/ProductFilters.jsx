@@ -15,6 +15,7 @@ export const ProductFilters = ({ onFilterChange }) => {
   const loadCategories = async () => {
     try {
       const data = await categoriesAPI.getAll();
+      console.log("categorias", data);
       setCategories(data);
     } catch (error) {
       console.error('Error al cargar categorías:', error);

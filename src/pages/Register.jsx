@@ -35,15 +35,29 @@ const Register = () => {
     setLoading(true);
 
     try {
+      console.log('Enviando datos de registro:', {
+        username: formData.username,
+        firstname: "Maxi",
+        lastname: "Schippert",
+        email: formData.email,
+        role: formData.role,
+      });
+      
       const data = await authAPI.register({
         username: formData.username,
+        firstname: "Maxi",
+        lastname: "Schippert",
         email: formData.email,
         password: formData.password,
         role: formData.role,
       });
-      authAPI.saveAuth(data.token, data.user);
+      
+      console.log('Respuesta del registro:', data);
+      
+      authAPI.saveAuth(data.access_token);
       navigate('/');
     } catch (error) {
+      console.error('Error en el registro:', error);
       setError(error.message || 'Error al registrarse');
     } finally {
       setLoading(false);

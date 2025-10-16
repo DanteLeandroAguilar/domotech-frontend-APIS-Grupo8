@@ -5,6 +5,7 @@ import { Button } from '../components/common/Button';
 import { ordersAPI } from '../api/endpoints/orders';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { Loading } from '../components/common/Loading';
+import { Footer } from '../components/common/Footer';
 
 const OrderSummary = () => {
   const [orders, setOrders] = useState([]);
@@ -25,7 +26,7 @@ const OrderSummary = () => {
     }
   };
 
-  const latestOrder = orders[0];
+  const latestOrder = orders.at(-1);
 
   if (loading) {
     return (

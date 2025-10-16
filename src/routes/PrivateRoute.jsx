@@ -3,16 +3,12 @@ import { useState, useEffect } from 'react';
 
 export const PrivateRoute = ({ children, requiredRole }) => {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
     
-    if (token && userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+    if (token) {
       setIsAuthenticated(true);
     }
     
@@ -34,9 +30,10 @@ export const PrivateRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/" replace />;
-  }
+  // TODO: Verificar el rol desde el token JWT decodificado
+  // if (requiredRole && userRole !== requiredRole) {
+  //   return <Navigate to="/" replace />;
+  // }
 
   return children;
 };

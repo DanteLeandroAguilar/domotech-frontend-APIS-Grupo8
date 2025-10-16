@@ -1,39 +1,108 @@
- 
-import axios from 'axios';
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4003';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4002',
-  headers: {
+// Rutas públicas que no requieren token
+const publicRoutes = ['/auth/register', '/auth/authenticate'];
+
+// Función helper para verificar si una URL es pública
+const isPublicRoute = (url) => {
+  console.log('Verificando ruta pública para URL:', url);
+  return publicRoutes.some(route => url.includes(route));
+};
+
+// Función helper para crear headers
+const createHeaders = (url, customHeaders = {}) => {
+  const headers = {
     'Content-Type': 'application/json',
-  },
-});
+    ...customHeaders,
+  };
 
-// Interceptor para agregar el token JWT a cada request
-api.interceptors.request.use(
-  (config) => {
+  // Agregar token solo si no es una ruta pública
+  if (!isPublicRoute(url)) {
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      headers.Authorization = `Bearer ${token}`;
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
   }
-);
 
-// Interceptor para manejar errores de respuesta
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token inválido o expirado
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  return headers;
+};
+
+// Función helper para manejar respuestas
+const handleResponse = (response) => {
+  return response.json().then(data => {
+    if (!response.ok) {
+      // Manejar error 401 (no autorizado)
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+      
+      // Rechazar con el error
+      return Promise.reject({
+        status: response.status,
+        message: data.message || data.error || 'Error en la petición',
+        data: data
+      });
     }
-    return Promise.reject(error);
-  }
-);
+    console.log("Data obtenida", data);
+    return data;
+  }).catch(error => {
+    // Si el error no es JSON, crear un error genérico
+    if (error.status) {
+      return Promise.reject(error);
+    }
+    return Promise.reject({
+      status: response.status,
+      message: 'Error al procesar la respuesta',
+      data: null
+    });
+  });
+};
+
+// Objeto API con métodos HTTP
+const api = {
+  get: (url, options = {}) => {
+    return fetch(`${baseURL}${url}`, {
+      method: 'GET',
+      headers: createHeaders(url, options.headers),
+      ...options,
+    }).then(handleResponse);
+  },
+
+  post: (url, data, options = {}) => {
+    return fetch(`${baseURL}${url}`, {
+      method: 'POST',
+      headers: createHeaders(url, options.headers),
+      body: JSON.stringify(data),
+      ...options,
+    }).then(handleResponse);
+  },
+
+  put: (url, data, options = {}) => {
+    return fetch(`${baseURL}${url}`, {
+      method: 'PUT',
+      headers: createHeaders(url, options.headers),
+      body: JSON.stringify(data),
+      ...options,
+    }).then(handleResponse);
+  },
+
+  patch: (url, data, options = {}) => {
+    return fetch(`${baseURL}${url}`, {
+      method: 'PATCH',
+      headers: createHeaders(url, options.headers),
+      body: JSON.stringify(data),
+      ...options,
+    }).then(handleResponse);
+  },
+
+  delete: (url, options = {}) => {
+    return fetch(`${baseURL}${url}`, {
+      method: 'DELETE',
+      headers: createHeaders(url, options.headers),
+      ...options,
+    }).then(handleResponse);
+  },
+};
 
 export default api;

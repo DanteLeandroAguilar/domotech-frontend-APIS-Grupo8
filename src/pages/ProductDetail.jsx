@@ -19,7 +19,6 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
-  const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -30,16 +29,15 @@ const ProductDetail = () => {
 
   const loadAuthData = () => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
     
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+    if (token) {
       setIsAuthenticated(true);
     }
   };
 
   const isSeller = () => {
-    return user?.role === 'SELLER';
+    // TODO: Obtener el rol del usuario desde el token JWT decodificado
+    return false;
   };
 
   const loadProduct = async () => {

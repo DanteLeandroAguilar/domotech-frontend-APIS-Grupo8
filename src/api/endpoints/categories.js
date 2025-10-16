@@ -1,51 +1,33 @@
- 
-import { mockCategories, simulateApiDelay } from '../../data/mockData';
+import api from '../axios';
 
 export const categoriesAPI = {
   // GET /categories - Obtener todas las categorías
   getAll: async () => {
-    await simulateApiDelay();
-    return mockCategories.filter(category => category.isActive);
+    const response = await api.get('/categories');
+    return response;
   },
 
   // GET /categories/{id} - Obtener categoría por ID
   getById: async (id) => {
-    await simulateApiDelay();
-    const category = mockCategories.find(cat => cat.id === parseInt(id));
-    if (!category) {
-      throw new Error('Categoría no encontrada');
-    }
-    return category;
+    const response = await api.get(`/categories/${id}`);
+    return response;
   },
 
   // POST /categories - Crear categoría (solo SELLER)
   create: async (categoryData) => {
-    await simulateApiDelay();
-    const newCategory = {
-      id: Date.now(), // ID temporal
-      ...categoryData,
-      isActive: true
-    };
-    return newCategory;
+    const response = await api.post('/categories', categoryData);
+    return response;
   },
 
   // PUT /categories/{id} - Actualizar categoría (solo SELLER)
   update: async (id, categoryData) => {
-    await simulateApiDelay();
-    const category = mockCategories.find(cat => cat.id === parseInt(id));
-    if (!category) {
-      throw new Error('Categoría no encontrada');
-    }
-    return { ...category, ...categoryData };
+    const response = await api.put(`/categories/${id}`, categoryData);
+    return response;
   },
 
   // DELETE /categories/{id} - Eliminar categoría (solo SELLER)
   delete: async (id) => {
-    await simulateApiDelay();
-    const category = mockCategories.find(cat => cat.id === parseInt(id));
-    if (!category) {
-      throw new Error('Categoría no encontrada');
-    }
-    return { message: 'Categoría eliminada correctamente' };
+    const response = await api.delete(`/categories/${id}`);
+    return response;
   },
 };
