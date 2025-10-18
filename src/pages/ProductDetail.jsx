@@ -8,7 +8,8 @@ import { Loading } from '../components/common/Loading';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
 import { cartAPI } from '../api/endpoints/cart';
-import { formatPrice, calculateDiscountPercentage } from '../utils/formatters';
+import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
+import { isSeller as authIsSeller, isAuthenticated as authIsAuthenticated } from '../utils/auth';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -20,6 +21,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSeller, setIsSeller] = useState(false);
 
   useEffect(() => {
     loadAuthData();
@@ -28,16 +30,8 @@ const ProductDetail = () => {
   }, [id]);
 
   const loadAuthData = () => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
-    }
-  };
-
-  const isSeller = () => {
-    // TODO: Obtener el rol del usuario desde el token JWT decodificado
-    return false;
+    setIsAuthenticated(authIsAuthenticated());
+    setIsSeller(authIsSeller());
   };
 
   const loadProduct = async () => {
@@ -68,7 +62,12 @@ const ProductDetail = () => {
 
     setAddingToCart(true);
     try {
-      await cartAPI.updateProductAmount(product.productId, quantity);
+      // Sumar a la cantidad existente en carrito en lugar de fijarla
+      const currentCart = await cartAPI.getMyCart();
+      const existingItem = currentCart?.items?.find((it) => it.productId === product.productId);
+      const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
+      const newAmount = currentAmount + quantity;
+      await cartAPI.updateProductAmount(product.productId, newAmount);
       alert('Producto agregado al carrito');
     } catch (error) {
       alert(error.message || 'Error al agregar al carrito');
@@ -104,7 +103,7 @@ const ProductDetail = () => {
   }
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);
-  const finalPrice = product.price - product.discount;
+  const finalPrice = calculateDiscountedPrice(product.price, product.discount);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -152,11 +151,11 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex items-center gap-2 mb-6">
-              {product.stock > 0 ? (
+              {product.available ? (
                 <>
                   <span className="material-symbols-outlined" style={{color:'#03A63C'}}>check_circle</span>
                   <p className="font-semibold" style={{color:'#03A63C'}}>
-                    En Stock ({product.stock} disponibles)
+                    Disponible
                   </p>
                 </>
               ) : (
@@ -171,7 +170,7 @@ const ProductDetail = () => {
               {product.description}
             </p>
 
-            {isAuthenticated && !isSeller() && product.stock > 0 && (
+            {isAuthenticated && !isSeller && product.stock > 0 && (
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">Cantidad</label>
                 <div className="flex items-center gap-4">
@@ -192,7 +191,7 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {isAuthenticated && !isSeller() && product.stock > 0 && (
+            {isAuthenticated && !isSeller && product.available && (
               <Button
                 fullWidth
                 onClick={handleAddToCart}

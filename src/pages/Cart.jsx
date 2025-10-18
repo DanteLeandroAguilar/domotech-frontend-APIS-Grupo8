@@ -32,13 +32,17 @@ const Cart = () => {
   };
 
   const handleClearCart = async () => {
-    if (window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) {
-      setCart({
-        id: 1,
-        items: [],
-        total: 0,
-        itemCount: 0
-      });
+    if (!window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) return;
+    try {
+      setLoading(true);
+      const current = await cartAPI.getMyCart();
+      const items = current?.items || [];
+      await Promise.all(items.map((it) => cartAPI.updateProductAmount(it.productId, 0)));
+      await loadCart();
+    } catch (error) {
+      console.error('Error al vaciar carrito:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

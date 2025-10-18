@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { formatPrice, calculateDiscountPercentage } from '../../utils/formatters';
+import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
+import { isSeller as authIsSeller } from '../../utils/auth';
 import { cartAPI } from '../../api/endpoints/cart';
 
 export const ProductCard = ({ product }) => {
@@ -16,17 +17,40 @@ export const ProductCard = ({ product }) => {
     }
   }, []);
 
-  const isSeller = () => {
-    // TODO: Obtener el rol del usuario desde el token JWT decodificado
-    return false;
-  };
+  const isSeller = () => authIsSeller();
 
-  const imageUrl = product.principalImage 
-    ? imagesAPI.getImageUrl(product.principalImage.imageId)
-    : 'https://via.placeholder.com/300x300?text=Sin+Imagen';
+  const [imageUrl, setImageUrl] = useState(
+    product.principalImage 
+      ? imagesAPI.getImageUrl(product.principalImage.imageId)
+      : 'https://via.placeholder.com/300x300?text=Sin+Imagen'
+  );
+
+  // Si las imágenes requieren auth y vienen como blob, creamos un Object URL
+  useEffect(() => {
+    let createdUrl;
+    const loadBlob = async () => {
+      if (!product?.principalImage?.imageId) return;
+      try {
+        const token = localStorage.getItem('token');
+        const url = imagesAPI.getImageUrl(product.principalImage.imageId);
+        const response = await fetch(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const blob = await response.blob();
+        createdUrl = URL.createObjectURL(blob);
+        setImageUrl(createdUrl);
+      } catch (e) {
+        // fallback se mantiene a la URL directa
+      }
+    };
+    loadBlob();
+    return () => {
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [product?.principalImage?.imageId]);
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);
-  const finalPrice = product.price - product.discount;
+  const finalPrice = calculateDiscountedPrice(product.price, product.discount);
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -34,7 +58,14 @@ export const ProductCard = ({ product }) => {
 
     setLoading(true);
     try {
-      await cartAPI.updateProductAmount(product.productId, 1);
+      // Obtener cantidad actual en carrito para este producto y sumar 1
+      const cart = await cartAPI.getMyCart();
+      const existingItem = cart?.items?.find((it) => it.productId === product.productId);
+      const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
+      const desired = currentAmount + 1;
+      const newAmount = desired;
+
+      await cartAPI.updateProductAmount(product.productId, newAmount);
       console.log('Producto agregado al carrito');
     } catch (error) {
       console.error('Error al agregar al carrito:', error);
@@ -87,13 +118,13 @@ export const ProductCard = ({ product }) => {
 
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            Stock: {product.stock}
+            {product.available ? '' : 'Sin Stock'}
           </span>
-          
-          {isAuthenticated && !isSeller() && product.active && (
+
+          {isAuthenticated && !isSeller() && product.active && product.available && (
             <button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0}
+              disabled={loading || !product.available}
               className="text-sm bg-primary text-white px-3 py-1 rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Agregando...' : 'Agregar'}
