@@ -39,7 +39,7 @@ const Home = () => {
         >
           <div className="text-center text-white max-w-3xl px-4">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tighter leading-tight">
-              Automatiza tu hogar con DomoTech
+              AUTOMATIZÁ TU HOGAR CON DOMOTECH
             </h1>
             <p className="mt-4 text-base md:text-lg text-gray-200">
               Descubre la última tecnología en domótica para hacer tu vida más fácil y eficiente.

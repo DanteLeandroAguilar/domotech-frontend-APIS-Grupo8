@@ -9,6 +9,7 @@ import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
 import { cartAPI } from '../api/endpoints/cart';
 import { formatPrice, calculateDiscountPercentage } from '../utils/formatters';
+import { toast } from 'react-toastify';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -69,9 +70,9 @@ const ProductDetail = () => {
     setAddingToCart(true);
     try {
       await cartAPI.updateProductAmount(product.productId, quantity);
-      alert('Producto agregado al carrito');
+      toast.success('Producto agregado al carrito');
     } catch (error) {
-      alert(error.message || 'Error al agregar al carrito');
+      toast.error(error.message || 'Error al agregar al carrito');
     } finally {
       setAddingToCart(false);
     }

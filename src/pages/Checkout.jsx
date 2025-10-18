@@ -6,6 +6,7 @@ import { Button } from '../components/common/Button';
 import { cartAPI } from '../api/endpoints/cart';
 import { ordersAPI } from '../api/endpoints/orders';
 import { formatPrice } from '../utils/formatters';
+import { toast } from 'react-toastify';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -47,13 +48,21 @@ const Checkout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const form = e.currentTarget;
+    if (!form.checkValidity()) {
+      toast.error('Por favor completa los campos requeridos correctamente');
+      form.reportValidity();
+      return;
+    }
     
     setLoading(true);
     try {
       await ordersAPI.confirm();
+      toast.success('Orden confirmada');
       navigate('/order-summary');
     } catch (error) {
-      alert(error.response?.data?.message || 'Error al procesar la orden');
+      toast.error(error.response?.data?.message || 'Error al procesar la orden');
     } finally {
       setLoading(false);
     }
