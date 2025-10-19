@@ -32,7 +32,7 @@ const Home = () => {
       
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="relative w-full h-[60vh] min-h-[480px] bg-cover bg-center flex items-center justify-center"
+        <section className="relative w-full h-[100vh] min-h-[480px] bg-cover bg-center flex items-center justify-center"
           style={{
             backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.7) 100%), url("https://images.unsplash.com/photo-1558002038-1055907df827?w=1920")'
           }}
