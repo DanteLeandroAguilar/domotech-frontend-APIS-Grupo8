@@ -1,8 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { imagesAPI } from '../../api/endpoints/images';
 
 export const ProductGallery = ({ images = [] }) => {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [blobUrls, setBlobUrls] = useState([]);
+
+  // Cargar blobs de imágenes protegidas y crear Object URLs
+  useEffect(() => {
+    if (!images || images.length === 0) return;
+
+    let isCancelled = false;
+    let createdUrls = [];
+
+    const loadBlobs = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const urls = await Promise.all(
+          images.map(async (image) => {
+            const url = imagesAPI.getImageUrl(image.imageId);
+            const response = await fetch(url, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            const blob = await response.blob();
+            return URL.createObjectURL(blob);
+          })
+        );
+        createdUrls = urls;
+        if (!isCancelled) {
+          setBlobUrls(urls);
+        }
+      } catch (e) {
+        // En caso de error, dejamos que se usen las URLs directas
+      }
+    };
+
+    loadBlobs();
+
+    return () => {
+      isCancelled = true;
+      createdUrls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [images]);
 
   if (!images || images.length === 0) {
     return (
@@ -13,7 +51,7 @@ export const ProductGallery = ({ images = [] }) => {
   }
 
   const mainImage = images[selectedImage];
-  const mainImageUrl = imagesAPI.getImageUrl(mainImage.imageId);
+  const mainImageUrl = blobUrls[selectedImage] || imagesAPI.getImageUrl(mainImage.imageId);
 
   return (
     <div className="space-y-4">
@@ -40,7 +78,7 @@ export const ProductGallery = ({ images = [] }) => {
               }`}
             >
               <img
-                src={imagesAPI.getImageUrl(image.imageId)}
+                src={blobUrls[index] || imagesAPI.getImageUrl(image.imageId)}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
               />

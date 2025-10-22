@@ -32,7 +32,11 @@ const ProductManagement = () => {
   const handleSubmit = async (formData) => {
     try {
       if (editingProduct) {
+        const stockChanged = Number(formData.stock) !== Number(editingProduct.stock);
         await productsAPI.update(editingProduct.productId, formData);
+        if (stockChanged) {
+          await productsAPI.updateStock(editingProduct.productId, { stock: Number(formData.stock) });
+        }
         toast.success('Producto actualizado correctamente');
       } else {
         await productsAPI.create(formData);

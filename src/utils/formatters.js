@@ -16,12 +16,15 @@ export const formatDate = (date) => {
 };
 
 // Calcular precio con descuento
-export const calculateDiscountedPrice = (price, discount) => {
-  return price - discount;
+export const calculateDiscountedPrice = (price, discountPercent) => {
+  if (!price || !discountPercent) return price;
+  const percent = Math.min(Math.max(Number(discountPercent), 0), 100);
+  return price * (1 - percent / 100);
 };
 
 // Calcular porcentaje de descuento
-export const calculateDiscountPercentage = (price, discount) => {
-  if (!price || !discount) return 0;
-  return Math.round((discount / price) * 100);
+export const calculateDiscountPercentage = (price, discountPercent) => {
+  if (!discountPercent) return 0;
+  const percent = Math.min(Math.max(Number(discountPercent), 0), 100);
+  return Math.round(percent);
 };

@@ -33,7 +33,7 @@ export const ProductTable = ({ products, onEdit, onDelete }) => {
               </th>
               <td className="px-6 py-4">{formatPrice(product.price)}</td>
               <td className="px-6 py-4">
-                {product.discount > 0 ? formatPrice(product.discount) : '-'}
+                {product.discount > 0 ? `${product.discount} %` : '-'}
               </td>
               <td className="px-6 py-4">{product.stock}</td>
               <td className="px-6 py-4">
