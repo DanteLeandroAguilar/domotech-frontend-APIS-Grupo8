@@ -39,4 +39,26 @@ export const authAPI = {
   logout: () => {
     localStorage.removeItem('token');
   },
+
+  // GET /auth/me - Obtener información del usuario autenticado
+  getLoggedUser: async () => {
+    try {
+      const data = await api.get('/users/me');
+      return data;
+    } catch (error) {
+      const message = error.message || 'Error al obtener información del usuario';
+      throw new Error(message);
+    }
+  },
+
+  // PUT /auth/{id} - Actualizar información del usuario
+  updateUser: async (id, userData) => {
+    try {
+      const data = await api.put(`/users/${id}`, userData);
+      return data;
+    } catch (error) {
+      const message = error.message || 'Error al actualizar información del usuario';
+      throw new Error(message);
+    }
+  },
 };

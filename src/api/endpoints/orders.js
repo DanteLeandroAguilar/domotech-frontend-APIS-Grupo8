@@ -10,6 +10,7 @@ export const ordersAPI = {
   // GET /orders/me - Obtener órdenes del usuario autenticado
   getMyOrders: async () => {
     const response = await api.get('/orders/me');
+    console.log("ORDERS RESPONSE", response);
     return response;
   },
 

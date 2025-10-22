@@ -9,6 +9,8 @@ const Register = ({ cartItemsCount }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
+    firstname: '',
+    lastname: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -44,22 +46,13 @@ const Register = ({ cartItemsCount }) => {
     setLoading(true);
 
     try {
-      console.log('Enviando datos de registro:', {
-        username: formData.username,
-        firstname: "Maxi",
-        lastname: "Schippert",
-        email: formData.email,
-        role: formData.role,
-      });
-      
       const data = await authAPI.register({
         username: formData.username,
-        firstname: "Maxi",
-        lastname: "Schippert",
+        firstname: formData.firstname,
+        lastname: formData.lastname,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
-      });
+              });
       
       console.log('Respuesta del registro:', data);
       
@@ -111,6 +104,40 @@ const Register = ({ cartItemsCount }) => {
                   className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
                   placeholder="Usuario"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="firstname" className="block text-sm font-medium mb-1">
+                    Nombre
+                  </label>
+                  <input
+                    id="firstname"
+                    name="firstname"
+                    type="text"
+                    required
+                    value={formData.firstname}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
+                    placeholder="Juan"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="lastname" className="block text-sm font-medium mb-1">
+                    Apellido
+                  </label>
+                  <input
+                    id="lastname"
+                    name="lastname"
+                    type="text"
+                    required
+                    value={formData.lastname}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
+                    placeholder="Pérez"
+                  />
+                </div>
               </div>
 
               <div>
