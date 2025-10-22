@@ -1,49 +1,23 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { authAPI } from '../../api/endpoints/auth';
-import { cartAPI } from '../../api/endpoints/cart';
 import { isSeller as authIsSeller, isBuyer as authIsBuyer } from '../../utils/auth';
 
-export const Header = () => {
+export const Header = ({ cartItemsCount = 0 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [cartItemsCount, setCartItemsCount] = useState(0);
 
   useEffect(() => {
     loadAuthData();
-    if (isAuthenticated && isBuyer()) {
-      loadCartCount();
-    }
-  }, [isAuthenticated]);
-
-  // Actualizar periódicamente el contador del carrito cuando el usuario está autenticado
-  useEffect(() => {
-    if (!(isAuthenticated && isBuyer())) return;
-    const intervalId = setInterval(() => {
-      loadCartCount();
-    }, 100);
-    return () => clearInterval(intervalId);
-  }, [isAuthenticated]);
+  }, []);
 
   const loadAuthData = () => {
     const token = localStorage.getItem('token');
     
     if (token) {
       setIsAuthenticated(true);
-    }
-  };
-
-  const loadCartCount = async () => {
-    try {
-      const data = await cartAPI.getMyCart();
-      if (data && data.items) {
-        const count = data.items.reduce((total, item) => total + item.amount, 0);
-        setCartItemsCount(count);
-      }
-    } catch (error) {
-      console.error('Error al cargar carrito:', error);
     }
   };
 
@@ -60,7 +34,6 @@ export const Header = () => {
   const handleLogout = () => {
     authAPI.logout();
     setIsAuthenticated(false);
-    setCartItemsCount(0);
     navigate('/');
   };
 

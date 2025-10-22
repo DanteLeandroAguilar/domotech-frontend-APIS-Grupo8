@@ -7,7 +7,7 @@ import { productsAPI } from '../api/endpoints/products';
 import { ProductCard } from '../components/products/ProductCard';
 import { Loading } from '../components/common/Loading';
 
-const Home = () => {
+const Home = ({ cartItemsCount, updateCartCount }) => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +28,7 @@ const Home = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow">
         {/* Hero Section */}
@@ -64,7 +64,7 @@ const Home = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {featuredProducts.map(product => (
-                  <ProductCard key={product.productId} product={product} />
+                  <ProductCard key={product.productId} product={product} updateCartCount={updateCartCount} />
                 ))}
               </div>
             )}

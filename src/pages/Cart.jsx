@@ -5,7 +5,7 @@ import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
 import { cartAPI } from '../api/endpoints/cart';
 
-const Cart = () => {
+const Cart = ({ cartItemsCount, updateCartCount }) => {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,6 +18,9 @@ const Cart = () => {
       setLoading(true);
       const data = await cartAPI.getMyCart();
       setCart(data);
+      if (updateCartCount) {
+        updateCartCount();
+      }
     } catch (error) {
       console.error('Error al cargar carrito:', error);
       setCart({
@@ -49,7 +52,7 @@ const Cart = () => {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header />
+        <Header cartItemsCount={cartItemsCount} />
         <main className="flex-grow">
           <Loading message="Cargando carrito..." />
         </main>
@@ -59,7 +62,7 @@ const Cart = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark">
-      <Header />
+      <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {!cart || !cart.items || cart.items.length === 0 ? (

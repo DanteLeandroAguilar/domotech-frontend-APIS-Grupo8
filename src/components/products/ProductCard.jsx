@@ -5,7 +5,7 @@ import { imagesAPI } from '../../api/endpoints/images';
 import { isSeller as authIsSeller } from '../../utils/auth';
 import { cartAPI } from '../../api/endpoints/cart';
 
-export const ProductCard = ({ product }) => {
+export const ProductCard = ({ product, updateCartCount }) => {
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -66,6 +66,9 @@ export const ProductCard = ({ product }) => {
       const newAmount = desired;
 
       await cartAPI.updateProductAmount(product.productId, newAmount);
+      if (updateCartCount) {
+        updateCartCount();
+      }
       console.log('Producto agregado al carrito');
     } catch (error) {
       console.error('Error al agregar al carrito:', error);

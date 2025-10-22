@@ -17,7 +17,7 @@ const decodeJwt = (token) => {
   }
 };
 
-const Profile = () => {
+const Profile = ({ cartItemsCount }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
 
@@ -42,7 +42,7 @@ const Profile = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto">

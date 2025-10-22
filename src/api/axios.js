@@ -59,7 +59,6 @@ const handleResponse = (response) => {
         data: data
       });
     }
-    console.log("Data obtenida", data);
     return data;
   }).catch(error => {
     // Si el error no es JSON, crear un error genérico

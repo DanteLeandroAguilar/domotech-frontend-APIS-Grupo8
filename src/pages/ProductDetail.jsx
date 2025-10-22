@@ -10,10 +10,9 @@ import { imagesAPI } from '../api/endpoints/images';
 import { cartAPI } from '../api/endpoints/cart';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
 import { isSeller as authIsSeller, isAuthenticated as authIsAuthenticated } from '../utils/auth';
-import { formatPrice, calculateDiscountPercentage } from '../utils/formatters';
 import { toast } from 'react-toastify';
 
-const ProductDetail = () => {
+const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -70,6 +69,7 @@ const ProductDetail = () => {
       const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
       const newAmount = currentAmount + quantity;
       await cartAPI.updateProductAmount(product.productId, newAmount);
+      updateCartCount();
       toast.success('Producto agregado al carrito');
     } catch (error) {
       toast.error(error.message || 'Error al agregar al carrito');
@@ -81,7 +81,7 @@ const ProductDetail = () => {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header />
+        <Header cartItemsCount={cartItemsCount} />
         <main className="flex-grow">
           <Loading message="Cargando producto..." />
         </main>
@@ -93,7 +93,7 @@ const ProductDetail = () => {
   if (!product) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header />
+        <Header cartItemsCount={cartItemsCount} />
         <main className="flex-grow container mx-auto px-4 py-12 text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             Producto no encontrado
@@ -109,7 +109,7 @@ const ProductDetail = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
