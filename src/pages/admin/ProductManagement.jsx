@@ -5,6 +5,7 @@ import { ProductForm } from '../../components/admin/ProductForm';
 import { ProductTable } from '../../components/admin/ProductTable';
 import { Loading } from '../../components/common/Loading';
 import { productsAPI } from '../../api/endpoints/products';
+import { toast } from 'react-toastify';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -32,17 +33,17 @@ const ProductManagement = () => {
     try {
       if (editingProduct) {
         await productsAPI.update(editingProduct.productId, formData);
-        alert('Producto actualizado correctamente');
+        toast.success('Producto actualizado correctamente');
       } else {
         await productsAPI.create(formData);
-        alert('Producto creado correctamente');
+        toast.success('Producto creado correctamente');
       }
       
       setShowForm(false);
       setEditingProduct(null);
       loadProducts();
     } catch (error) {
-      alert(error.response?.data?.message || 'Error al guardar producto');
+      toast.error(error.response?.data?.message || 'Error al guardar producto');
     }
   };
 
@@ -58,10 +59,10 @@ const ProductManagement = () => {
 
     try {
       await productsAPI.delete(productId);
-      alert('Producto eliminado correctamente');
+      toast.success('Producto eliminado correctamente');
       loadProducts();
     } catch (error) {
-      alert(error.response?.data?.message || 'Error al eliminar producto');
+      toast.error(error.response?.data?.message || 'Error al eliminar producto');
     }
   };
 

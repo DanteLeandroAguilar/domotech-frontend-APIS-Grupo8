@@ -122,8 +122,13 @@ export const Header = () => {
             {/* Usuario */}
             {isAuthenticated ? (
               <div className="flex items-center gap-7">
-                <Link to="/profile" className="hidden sm:block text-sm font-medium text-white hover:text-orange-500 transition-colors">
-                  Mi Perfil
+                <Link
+                  to="/profile"
+                  aria-label="Perfil"
+                  title="Mi Perfil"
+                  className="rounded-lg p-2 text-white hover:text-orange-500 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[24px]">person</span>
                 </Link>
                 <button
                   onClick={handleLogout}

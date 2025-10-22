@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
 import { authAPI } from '../api/endpoints/auth';
+import { toast } from 'react-toastify';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const Register = () => {
     role: 'BUYER',
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -25,10 +26,18 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+
+    const form = e.currentTarget;
+    if (!form.checkValidity()) {
+      const firstInvalid = form.querySelector(':invalid');
+      const message = firstInvalid?.validationMessage || 'Por favor completa los campos requeridos correctamente';
+      toast.error(message);
+      form.reportValidity();
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      toast.error('Las contraseñas no coinciden');
       return;
     }
 
@@ -55,10 +64,11 @@ const Register = () => {
       console.log('Respuesta del registro:', data);
       
       authAPI.saveAuth(data.access_token);
+      toast.success('Cuenta creada correctamente');
       navigate('/');
     } catch (error) {
       console.error('Error en el registro:', error);
-      setError(error.message || 'Error al registrarse');
+      toast.error(error.message || 'Error al registrarse');
     } finally {
       setLoading(false);
     }
@@ -86,12 +96,6 @@ const Register = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-            {error && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-4">
-                <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
-              </div>
-            )}
-
             <div className="space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium mb-1">
@@ -105,6 +109,7 @@ const Register = () => {
                   value={formData.username}
                   onChange={handleChange}
                   className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
+                  placeholder="Usuario"
                 />
               </div>
 
@@ -120,6 +125,7 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
+                  placeholder="usuario@ejemplo.com"
                 />
               </div>
 
@@ -127,48 +133,79 @@ const Register = () => {
                 <label htmlFor="password" className="block text-sm font-medium mb-1">
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full pr-10 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
+                    placeholder="Password"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-gray-600 dark:text-gray-300"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-4.97 0-9.18-3.22-11-7a11.05 11.05 0 0 1 2.74-3.38" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l22 22" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.88 9.88a3 3 0 004.24 4.24" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
                   Confirmar contraseña
                 </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
-                />
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full pr-10 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
+                    placeholder="Password"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-gray-600 dark:text-gray-300"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-4.97 0-9.18-3.22-11-7a11.05 11.05 0 0 1 2.74-3.38" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M1 1l22 22" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.88 9.88a3 3 0 004.24 4.24" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium mb-1">
-                  Tipo de cuenta
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary"
-                >
-                  <option value="BUYER">Comprador</option>
-                  <option value="SELLER">Vendedor</option>
-                </select>
-              </div>
-            </div>
+                          </div>
 
             <Button type="submit" fullWidth disabled={loading}>
               {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
