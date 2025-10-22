@@ -9,9 +9,16 @@ export const CartSummary = ({ cart }) => {
     return null;
   }
 
+  // Calcular subtotal sin descuentos (precio original * cantidad)
   const subtotal = cart.items.reduce((total, item) => total + (item.price * item.amount), 0);
-  const discounts = 0; // Puedes calcular descuentos aquí si los tienes
-  const total = subtotal - discounts;
+  
+  // Calcular total con descuentos aplicados usando finalPrice del backend
+  const total = cart.items.reduce((total, item) => {
+    return total + (item.finalPrice || (item.price * item.amount));
+  }, 0);
+  
+  // Calcular el monto total de descuentos
+  const discounts = subtotal - total;
 
   const handleCheckout = () => {
     navigate('/checkout');

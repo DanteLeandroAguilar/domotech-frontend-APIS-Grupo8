@@ -83,7 +83,10 @@ export const CartItem = ({ item, onUpdate }) => {
     }
   };
 
-  const subtotal = item.price * item.amount;
+  // Usar los valores que vienen del backend
+  const discount = item.discount || 0;
+  const unitFinalPrice = item.price * (1 - discount / 100);
+  const subtotal = item.finalPrice || (unitFinalPrice * item.amount);
 
   return (
     <div className="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800">
@@ -99,9 +102,25 @@ export const CartItem = ({ item, onUpdate }) => {
         <h3 className="font-bold text-gray-900 dark:text-white">
           {item.productName}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {formatPrice(item.price)}
-        </p>
+        <div className="flex items-center gap-2">
+          {discount > 0 ? (
+            <>
+              <p className="text-sm text-gray-400 dark:text-gray-500 line-through">
+                {formatPrice(item.price)}
+              </p>
+              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                {formatPrice(unitFinalPrice)}
+              </p>
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded">
+                {discount}% OFF
+              </span>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {formatPrice(item.price)}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Controles de cantidad */}

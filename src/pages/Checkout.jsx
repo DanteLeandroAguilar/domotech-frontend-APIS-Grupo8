@@ -43,6 +43,14 @@ const Checkout = () => {
 
   const getCartTotal = () => {
     if (!cart || !cart.items) return 0;
+    // Usar finalPrice que ya viene calculado del backend
+    return cart.items.reduce((total, item) => {
+      return total + (item.finalPrice || (item.price * item.amount));
+    }, 0);
+  };
+
+  const getCartSubtotal = () => {
+    if (!cart || !cart.items) return 0;
     return cart.items.reduce((total, item) => total + (item.price * item.amount), 0);
   };
 
@@ -76,6 +84,8 @@ const Checkout = () => {
   };
 
   const total = getCartTotal();
+  const subtotal = getCartSubtotal();
+  const discounts = subtotal - total;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -225,7 +235,7 @@ const Checkout = () => {
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                              <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2,0,002-2V8a2 2,0,00-2-2H5a2 2,0,00-2 2v8a2 2,0,002 2z"></path>
                             </svg>
                           </span>
                           <input
@@ -274,7 +284,7 @@ const Checkout = () => {
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                <path d="M12 15v2m-6 4h12a2 2,0,002-2v-6a2 2,0,00-2-2H6a2 2,0,00-2 2v6a2 2,0,002 2zm10-10V7a4 4,0,00-8 0v4h8z"></path>
                               </svg>
                             </span>
                           </div>
@@ -318,16 +328,27 @@ const Checkout = () => {
                   </h3>
 
                   <div className="space-y-4 mb-6">
-                    {cart?.items?.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-300">
-                          {item.productName} x {item.amount}
-                        </span>
-                        <span className="font-medium">
-                          {formatPrice(item.price * item.amount)}
-                        </span>
-                      </div>
-                    ))}
+                    {cart?.items?.map((item) => {
+                      const discount = item.discount || 0;
+                      const unitFinalPrice = item.price * (1 - discount / 100);
+                      return (
+                        <div key={item.id} className="flex justify-between text-sm">
+                          <div className="flex-1">
+                            <span className="text-gray-600 dark:text-gray-300">
+                              {item.productName} x {item.amount}
+                            </span>
+                            {discount > 0 && (
+                              <span className="ml-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded">
+                                {discount}% OFF
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-medium">
+                            {formatPrice(item.finalPrice || (unitFinalPrice * item.amount))}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
@@ -335,8 +356,18 @@ const Checkout = () => {
                       <span className="text-gray-600 dark:text-gray-300">
                         Subtotal
                       </span>
-                      <span className="font-medium">{formatPrice(total)}</span>
+                      <span className="font-medium">{formatPrice(subtotal)}</span>
                     </div>
+                    {discounts > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-300">
+                          Descuentos
+                        </span>
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          -{formatPrice(discounts)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total</span>
                       <span>{formatPrice(total)}</span>
