@@ -27,9 +27,13 @@ const isPublicRoute = (url) => {
 // Función helper para crear headers
 const createHeaders = (url, customHeaders = {}) => {
   const headers = {
-    'Content-Type': 'application/json',
     ...customHeaders,
   };
+
+  // No agregar Content-Type si ya viene en customHeaders (para FormData)
+  if (!customHeaders['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   // Agregar token solo si no es una ruta pública
   if (!isPublicRoute(url)) {
@@ -89,10 +93,19 @@ const api = {
     const queryString = buildQueryString(options.params);
     const fullUrl = `${baseURL}${url}${queryString}`;
     
+    // Si data es FormData, no convertir a JSON y no establecer Content-Type
+    const isFormData = data instanceof FormData;
+    const headers = createHeaders(url, options.headers);
+    
+    // Si es FormData, remover Content-Type para que el navegador lo configure automáticamente
+    if (isFormData) {
+      delete headers['Content-Type'];
+    }
+    
     return fetch(fullUrl, {
       method: 'POST',
-      headers: createHeaders(url, options.headers),
-      body: JSON.stringify(data),
+      headers: headers,
+      body: isFormData ? data : JSON.stringify(data),
     }).then(handleResponse);
   },
 
@@ -100,10 +113,18 @@ const api = {
     const queryString = buildQueryString(options.params);
     const fullUrl = `${baseURL}${url}${queryString}`;
     
+    // Si data es FormData, no convertir a JSON
+    const isFormData = data instanceof FormData;
+    const headers = createHeaders(url, options.headers);
+    
+    if (isFormData) {
+      delete headers['Content-Type'];
+    }
+    
     return fetch(fullUrl, {
       method: 'PUT',
-      headers: createHeaders(url, options.headers),
-      body: JSON.stringify(data),
+      headers: headers,
+      body: isFormData ? data : JSON.stringify(data),
     }).then(handleResponse);
   },
 

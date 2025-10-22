@@ -3,11 +3,7 @@ import api from '../axios';
 export const imagesAPI = {
   // POST /api/productos/{productId}/images - Subir imagen (solo SELLER)
   upload: async (productId, formData) => {
-    const response = await api.post(`/api/productos/${productId}/images`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post(`/api/productos/${productId}/images`, formData);
     return response;
   },
 

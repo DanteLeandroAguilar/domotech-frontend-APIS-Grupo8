@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { categoriesAPI } from '../../api/endpoints/categories';
 import { Button } from '../common/Button';
+import { ProductImageManager } from './ProductImageManager';
 
 export const ProductForm = ({ product, onSubmit, onCancel }) => {
   const [categories, setCategories] = useState([]);
+  const [images, setImages] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -14,6 +16,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
     compatibility: '',
     conectionType: '',
     categoryId: '',
+    active: true,
   });
 
   useEffect(() => {
@@ -29,7 +32,19 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
         compatibility: product.compatibility || '',
         conectionType: product.conectionType || '',
         categoryId: product.category?.categoryId || '',
+        active: product.active !== undefined ? product.active : true,
       });
+      
+      // Cargar imágenes existentes del producto
+      if (product.images && product.images.length > 0) {
+        const existingImages = product.images.map(img => ({
+          id: img.imageId || img.id,
+          url: img.url,
+          isMain: img.isMain || false,
+          isNew: false,
+        }));
+        setImages(existingImages);
+      }
     }
   }, [product]);
 
@@ -43,13 +58,30 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
+  };
+
+  const handleImagesChange = (updatedImages) => {
+    setImages(updatedImages);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Validar que haya al menos una imagen
+    if (images.length === 0) {
+      alert('Debes agregar al menos una imagen del producto');
+      return;
+    }
+    
+    onSubmit({
+      ...formData,
+      images: images,
+    });
   };
 
   return (
@@ -78,6 +110,13 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
           placeholder="Descripción del producto"
         />
       </div>
+
+      {/* Gestor de Imágenes */}
+      <ProductImageManager 
+        images={images}
+        onImagesChange={handleImagesChange}
+        maxImages={5}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -181,6 +220,29 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
           <option value="ZWAVE">Z-Wave</option>
         </select>
       </div>
+
+      {/* Estado del producto - Solo visible al editar */}
+      {product && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="active"
+              checked={formData.active}
+              onChange={handleChange}
+              className="w-5 h-5 text-primary bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:ring-2"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Producto Activo</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formData.active 
+                  ? 'El producto está visible en el catálogo' 
+                  : 'El producto está oculto del catálogo'}
+              </span>
+            </div>
+          </label>
+        </div>
+      )}
 
       <div className="flex gap-4 pt-4">
         <Button type="submit" fullWidth>

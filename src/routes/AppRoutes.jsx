@@ -15,6 +15,7 @@ import Profile from '../pages/Profile';
 // Admin Pages
 import ProductManagement from '../pages/admin/ProductManagement';
 import AdminDashboard from '../pages/admin/AdminDashboard';
+import CategoryManagement from '../pages/admin/CategoryManagement';
 
 export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
   return (
@@ -75,6 +76,14 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
           element={
             <PrivateRoute requiredRole="SELLER">
               <ProductManagement cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <PrivateRoute requiredRole="SELLER">
+              <CategoryManagement cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
             </PrivateRoute>
           }
         />

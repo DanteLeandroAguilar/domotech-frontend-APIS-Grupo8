@@ -8,6 +8,7 @@ export const Header = ({ cartItemsCount = 0 }) => {
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showManagementMenu, setShowManagementMenu] = useState(false);
 
   useEffect(() => {
     loadAuthData();
@@ -60,9 +61,43 @@ export const Header = ({ cartItemsCount = 0 }) => {
                   <Link to="/admin" className="text-sm font-medium text-white dark:text-gray-300 hover:text-[#05AFF2] transition-colors">
                     Dashboard
                   </Link>
-                  <Link to="/admin/products" className="text-sm font-medium text-white dark:text-gray-300 hover:text-[#05AFF2] transition-colors">
-                    Stock
-                  </Link>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowManagementMenu(!showManagementMenu)}
+                      onBlur={() => setTimeout(() => setShowManagementMenu(false), 200)}
+                      className="text-sm font-medium text-white dark:text-gray-300 hover:text-[#05AFF2] transition-colors flex items-center gap-1"
+                    >
+                      Gestión
+                      <span className="material-symbols-outlined text-[18px]">
+                        {showManagementMenu ? 'expand_less' : 'expand_more'}
+                      </span>
+                    </button>
+                    
+                    {showManagementMenu && (
+                      <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <Link
+                          to="/admin/products"
+                          className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() => setShowManagementMenu(false)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[20px]">inventory_2</span>
+                            <span>Productos</span>
+                          </div>
+                        </Link>
+                        <Link
+                          to="/admin/categories"
+                          className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() => setShowManagementMenu(false)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[20px]">category</span>
+                            <span>Categorías</span>
+                          </div>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </nav>
