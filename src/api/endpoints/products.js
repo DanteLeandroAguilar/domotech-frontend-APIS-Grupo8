@@ -1,4 +1,4 @@
-import api from '../axios';
+import api from '../clients';
 
 export const productsAPI = {
   // GET /api/products/catalog - Catálogo público con paginación

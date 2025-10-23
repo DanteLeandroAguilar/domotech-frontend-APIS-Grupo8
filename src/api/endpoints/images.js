@@ -1,4 +1,4 @@
-import api from '../axios';
+import api from '../clients';
 
 export const imagesAPI = {
   // POST /api/productos/{productId}/images - Subir imagen (solo SELLER)

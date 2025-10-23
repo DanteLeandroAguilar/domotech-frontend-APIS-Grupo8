@@ -60,7 +60,7 @@ export const ProductGallery = ({ images = [] }) => {
         <img
           src={mainImageUrl}
           alt="Producto"
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
         />
       </div>
 

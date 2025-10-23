@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Header } from '../components/common/Header';
 import { authAPI } from '../api/endpoints/auth';
 import { ordersAPI } from '../api/endpoints/orders';
+import { productsAPI } from '../api/endpoints/products';
+import { imagesAPI } from '../api/endpoints/images';
 
 const Profile = ({ cartItemsCount }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,6 +23,7 @@ const Profile = ({ cartItemsCount }) => {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [ordersError, setOrdersError] = useState(null);
+  const [productImages, setProductImages] = useState({});
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -58,6 +61,13 @@ const Profile = ({ cartItemsCount }) => {
     }
   }, [activeTab, isAuthenticated]);
 
+  // Cargar imágenes cuando cambian las órdenes
+  useEffect(() => {
+    if (orders.length > 0) {
+      loadOrderProductImages();
+    }
+  }, [orders]);
+
   const fetchOrders = async () => {
     setLoadingOrders(true);
     setOrdersError(null);
@@ -71,6 +81,53 @@ const Profile = ({ cartItemsCount }) => {
       setLoadingOrders(false);
     }
   };
+
+  const loadOrderProductImages = async () => {
+    try {
+      const images = {};
+      const token = localStorage.getItem('token');
+      
+      // Recopilar todos los productIds únicos de todas las órdenes
+      const productIds = new Set();
+      orders.forEach(order => {
+        order.details?.forEach(detail => {
+          productIds.add(detail.productId);
+        });
+      });
+
+      // Cargar imágenes de todos los productos
+      await Promise.all(
+        Array.from(productIds).map(async (productId) => {
+          try {
+            const product = await productsAPI.getById(productId);
+            
+            if (product.principalImage?.imageId) {
+              const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
+              
+              const response = await fetch(imageUrl, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+              });
+              const blob = await response.blob();
+              images[productId] = URL.createObjectURL(blob);
+            }
+          } catch (error) {
+            console.error(`Error al cargar imagen del producto ${productId}:`, error);
+          }
+        })
+      );
+      
+      setProductImages(images);
+    } catch (error) {
+      console.error('Error al cargar imágenes de productos:', error);
+    }
+  };
+
+  // Limpiar Object URLs al desmontar el componente
+  useEffect(() => {
+    return () => {
+      Object.values(productImages).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [productImages]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -407,46 +464,68 @@ const Profile = ({ cartItemsCount }) => {
                         {order.details && order.details.length > 0 ? (
                           order.details.map((detail) => (
                             <div key={detail.id} className="border-b border-gray-100 dark:border-gray-700/50 pb-3 last:border-b-0 last:pb-0">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {detail.productName}
-                                  </p>
-                                  <div className="mt-2 space-y-1">
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                      <span>Cantidad: {detail.quantity}</span>
-                                      <span>×</span>
-                                      <span>{formatPrice(detail.unitPrice)}</span>
+                              <div className="flex gap-4">
+                                {/* Imagen del producto */}
+                                <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                  {productImages[detail.productId] ? (
+                                    <img
+                                      src={productImages[detail.productId]}
+                                      alt={detail.productName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <span className="material-symbols-outlined text-gray-400">
+                                        package_2
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Información del producto */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1 min-w-0 pr-4">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                        {detail.productName}
+                                      </p>
+                                      <div className="mt-2 space-y-1">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                          <span>Cantidad: {detail.quantity}</span>
+                                          <span>×</span>
+                                          <span>{formatPrice(detail.unitPrice)}</span>
+                                          {detail.appliedDiscount > 0 && (
+                                            <>
+                                              <span>=</span>
+                                              <span className="line-through">
+                                                {formatPrice(detail.unitPrice * detail.quantity)}
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                        {detail.appliedDiscount > 0 && (
+                                          <div className="flex items-center gap-2 text-xs">
+                                            <span className="text-green-600 dark:text-green-400 font-medium">
+                                              ✓ Descuento aplicado: {formatDiscount(detail.appliedDiscount)}
+                                            </span>
+                                            <span className="text-gray-500 dark:text-gray-400">
+                                              (Ahorro: {formatPrice(detail.unitPrice * detail.quantity - detail.subtotal)})
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        {formatPrice(detail.subtotal)}
+                                      </p>
                                       {detail.appliedDiscount > 0 && (
-                                        <>
-                                          <span>=</span>
-                                          <span className="line-through">
-                                            {formatPrice(detail.unitPrice * detail.quantity)}
-                                          </span>
-                                        </>
+                                        <p className="text-xs text-green-600 dark:text-green-400">
+                                          con descuento
+                                        </p>
                                       )}
                                     </div>
-                                    {detail.appliedDiscount > 0 && (
-                                      <div className="flex items-center gap-2 text-xs">
-                                        <span className="text-green-600 dark:text-green-400 font-medium">
-                                          ✓ Descuento aplicado: {formatDiscount(detail.appliedDiscount)}
-                                        </span>
-                                        <span className="text-gray-500 dark:text-gray-400">
-                                          (Ahorro: {formatPrice(detail.unitPrice * detail.quantity - detail.subtotal)})
-                                        </span>
-                                      </div>
-                                    )}
                                   </div>
-                                </div>
-                                <div className="text-right ml-4">
-                                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                                    {formatPrice(detail.subtotal)}
-                                  </p>
-                                  {detail.appliedDiscount > 0 && (
-                                    <p className="text-xs text-green-600 dark:text-green-400">
-                                      con descuento
-                                    </p>
-                                  )}
                                 </div>
                               </div>
                             </div>
