@@ -114,16 +114,10 @@ const OrderSummary = () => {
                   <p className="text-gray-600 dark:text-gray-400">Envío</p>
                   <p className="font-medium text-gray-900 dark:text-white">$0.00</p>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <p className="text-gray-600 dark:text-gray-400">Impuestos</p>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {formatPrice(order.total * 0.07)}
-                  </p>
-                </div>
                 <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-white/10 mt-2">
                   <p className="text-gray-900 dark:text-white">Total</p>
                   <p className="text-gray-900 dark:text-white">
-                    {formatPrice(order.total * 1.07)}
+                    {formatPrice(order.total)}
                   </p>
                 </div>
               </div>

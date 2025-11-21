@@ -1,4 +1,4 @@
-import api from '../axios';
+import api from '../clients';
 
 export const ordersAPI = {
   // POST /orders/confirm - Confirmar orden (convertir carrito en orden)

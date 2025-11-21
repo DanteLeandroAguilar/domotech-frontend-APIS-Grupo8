@@ -88,7 +88,7 @@ export const ProductCard = ({ product, updateCartCount }) => {
           style={{ backgroundImage: `url(${imageUrl})` }}
         />
         {discountPercentage > 0 && (
-          <div className="absolute top-2 right-2 bg-primary/20 text-primary font-bold text-xs px-2 py-1 rounded-full">
+          <div className="absolute top-2 right-2 bg-green-500/30 text-xs px-2 py-1 rounded-full font-bold" style={{color:'#00FF7F'}}>
             {discountPercentage}% OFF
           </div>
         )}

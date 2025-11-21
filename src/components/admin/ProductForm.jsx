@@ -86,28 +86,28 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block text-sm font-medium mb-1">Nombre del Producto</label>
+        <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Nombre del Producto</label>
         <input
           type="text"
           name="name"
           value={formData.name}
           onChange={handleChange}
           required
-          className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
           placeholder="Ej: Sensor de Movimiento"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Descripción</label>
+        <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Descripción</label>
         <textarea
           name="description"
           value={formData.description}
           onChange={handleChange}
           rows="3"
-          className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500 resize-none"
           placeholder="Descripción del producto"
         />
       </div>
@@ -121,37 +121,47 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Precio</label>
-          <input
-            type="number"
-            name="price"
-            value={formData.price}
-            onChange={handleChange}
-            required
-            step="0.01"
-            min="0"
-            className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
-            placeholder="0.00"
-          />
+          <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Precio</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <span className="text-gray-500 dark:text-gray-400 font-medium">$</span>
+            </div>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              required
+              step="0.01"
+              min="0"
+              className="w-full pl-9 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
+              placeholder="0.00"
+            />
+          </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Descuento</label>
-          <input
-            type="number"
-            name="discount"
-            value={formData.discount}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
-            placeholder="0.00"
-          />
+          <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Descuento</label>
+          <div className="relative">
+            <input
+              type="number"
+              name="discount"
+              value={formData.discount}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              className="w-full pl-4 pr-9 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
+              placeholder="0.00"
+            />
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+              <span className="text-gray-500 dark:text-gray-400 font-medium">%</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Stock</label>
+        <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Stock</label>
         <input
           type="number"
           name="stock"
@@ -159,19 +169,19 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
           onChange={handleChange}
           required
           min="0"
-          className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
           placeholder="0"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Categoría</label>
+        <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Categoría</label>
         <select
           name="categoryId"
           value={formData.categoryId}
           onChange={handleChange}
           required
-          className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500 cursor-pointer"
         >
           <option value="">Seleccionar categoría</option>
           {categories.map(cat => (
@@ -183,36 +193,36 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Marca</label>
+        <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Marca</label>
         <input
           type="text"
           name="brand"
           value={formData.brand}
           onChange={handleChange}
-          className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
           placeholder="Marca del producto"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Compatibilidad</label>
+        <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Compatibilidad</label>
         <input
           type="text"
           name="compatibility"
           value={formData.compatibility}
           onChange={handleChange}
-          className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
           placeholder="Ej: Alexa, Google Home"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Tipo de Conexión</label>
+        <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Tipo de Conexión</label>
         <select
           name="conectionType"
           value={formData.conectionType}
           onChange={handleChange}
-          className="w-full bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500 cursor-pointer"
         >
           <option value="">Seleccionar tipo</option>
           <option value="WIFI">WiFi</option>
@@ -224,17 +234,17 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
 
       {/* Estado del producto - Solo visible al editar */}
       {product && (
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <label className="flex items-center gap-3 cursor-pointer">
+        <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-6">
+          <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-2 border-gray-200 dark:border-gray-600">
             <input
               type="checkbox"
               name="active"
               checked={formData.active}
               onChange={handleChange}
-              className="w-5 h-5 text-primary bg-background-light dark:bg-gray-800 border-gray-300 dark:border-gray-700 rounded focus:ring-primary focus:ring-2"
+              className="w-5 h-5 text-primary bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all"
             />
             <div className="flex flex-col">
-              <span className="text-sm font-medium">Producto Activo</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">Producto Activo</span>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {formData.active 
                   ? 'El producto está visible en el catálogo' 

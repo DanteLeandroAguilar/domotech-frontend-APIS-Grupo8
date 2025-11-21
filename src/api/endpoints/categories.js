@@ -1,4 +1,4 @@
-import api from '../axios';
+import api from '../clients';
 
 export const categoriesAPI = {
   // GET /categories - Obtener todas las categorías

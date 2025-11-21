@@ -1,4 +1,4 @@
-import api from '../axios';
+import api from '../clients';
 
 export const cartAPI = {
   // GET /carts/me - Obtener carrito del usuario autenticado
