@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { categoriesAPI } from '../../api/endpoints/categories';
 import { Button } from '../common/Button';
 import { ProductImageManager } from './ProductImageManager';
+import { 
+  selectImagesByProduct, 
+  fetchProductImages 
+} from '../../store/slices/productImageSlice';
 
 export const ProductForm = ({ product, onSubmit, onCancel }) => {
+  const dispatch = useDispatch();
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
   const [formData, setFormData] = useState({
@@ -18,6 +24,11 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
     categoryId: '',
     active: true,
   });
+
+  // Obtener imágenes desde Redux si es edición
+  const reduxImages = useSelector(state => 
+    product ? selectImagesByProduct(state, product.productId) : []
+  );
 
   useEffect(() => {
     loadCategories();
@@ -35,18 +46,24 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
         active: product.active !== undefined ? product.active : true,
       });
       
-      // Cargar imágenes existentes del producto
-      if (product.images && product.images.length > 0) {
-        const existingImages = product.images.map(img => ({
-          id: img.imageId || img.id,
-          url: img.url,
-          isMain: img.isMain || false,
-          isNew: false,
-        }));
-        setImages(existingImages);
-      }
+      // Cargar imágenes desde Redux
+      dispatch(fetchProductImages(product.productId));
     }
-  }, [product]);
+  }, [product, dispatch]);
+
+  // Sincronizar imágenes de Redux con estado local
+  useEffect(() => {
+    if (product && reduxImages.length > 0) {
+      const existingImages = reduxImages.map(img => ({
+        id: img.imageId || img.id,
+        imageId: img.imageId,
+        url: img.url,
+        isMain: img.isMain || false,
+        isNew: false,
+      }));
+      setImages(existingImages);
+    }
+  }, [reduxImages, product]);
 
   const loadCategories = async () => {
     try {

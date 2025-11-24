@@ -1,39 +1,49 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { ProductGallery } from '../components/products/ProductGallery';
 import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
 import { productsAPI } from '../api/endpoints/products';
-import { imagesAPI } from '../api/endpoints/images';
 import { cartAPI } from '../api/endpoints/cart';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
-import { isSeller as authIsSeller, isAuthenticated as authIsAuthenticated } from '../utils/auth';
 import { toast } from 'react-toastify';
+import { 
+  fetchProductImages, 
+  selectImagesByProduct, 
+  selectImagesLoading 
+} from '../store/slices/productImageSlice';
+import { 
+  selectIsAuthenticated, 
+  selectUserRole 
+} from '../store/slices/userSlice';
 
 const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
+  // Estado de Redux
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userRole = useSelector(selectUserRole);
+  const images = useSelector((state) => selectImagesByProduct(state, id));
+  const imagesLoading = useSelector(selectImagesLoading);
+  
+  // Estado local
   const [product, setProduct] = useState(null);
-  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSeller, setIsSeller] = useState(false);
+
+  const isSeller = userRole === 'SELLER';
 
   useEffect(() => {
-    loadAuthData();
     loadProduct();
-    loadImages();
-  }, [id]);
-
-  const loadAuthData = () => {
-    setIsAuthenticated(authIsAuthenticated());
-    setIsSeller(authIsSeller());
-  };
+    // Cargar imágenes usando Redux
+    dispatch(fetchProductImages(id));
+  }, [id, dispatch]);
 
   const loadProduct = async () => {
     try {
@@ -41,17 +51,9 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
       setProduct(data);
     } catch (error) {
       console.error('Error al cargar producto:', error);
+      toast.error('Error al cargar el producto');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadImages = async () => {
-    try {
-      const data = await imagesAPI.getByProduct(id);
-      setImages(data);
-    } catch (error) {
-      console.error('Error al cargar imágenes:', error);
     }
   };
 
@@ -78,7 +80,7 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
     }
   };
 
-  if (loading) {
+  if (loading || imagesLoading) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header cartItemsCount={cartItemsCount} />
@@ -114,11 +116,12 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           
+          {/* Galería de imágenes */}
           <div>
             <ProductGallery images={images} />
           </div>
 
-          
+          {/* Información del producto */}
           <div>
             <div className="flex items-center text-sm mb-4">
               <span className="text-gray-500 dark:text-gray-400">

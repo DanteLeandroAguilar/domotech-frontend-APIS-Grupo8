@@ -9,7 +9,9 @@ import { imagesAPI } from '../../api/endpoints/images';
 export const fetchProductImages = createAsyncThunk(
   'productImage/fetchByProduct',
   async (productId) => {
+    console.log(`🔄 Fetching images for product ${productId}...`);
     const images = await imagesAPI.getByProduct(productId);
+    console.log(`✅ Fetched ${images.length} image(s) for product ${productId}:`, images);
     return { productId, images };
   }
 );
@@ -60,7 +62,7 @@ const productImageSlice = createSlice({
     // Imágenes organizadas por productId
     imagesByProduct: {},
     // { 
-    //   42: [{ imageId: 1, url: '...', isPrincipal: true }, ...],
+    //   42: [{ imageId: 1, url: '...', isMain: true }, ...],
     //   58: [...]
     // }
     
@@ -80,14 +82,27 @@ const productImageSlice = createSlice({
     // Limpiar imágenes de un producto específico
     clearProductImages: (state, action) => {
       const productId = action.payload;
+      console.log(`🗑️ Clearing images for product ${productId}`);
       delete state.imagesByProduct[productId];
       delete state.loading[productId];
       delete state.errors[productId];
       delete state.uploading[productId];
     },
     
+    // Invalidar caché de un producto (forzar recarga)
+    invalidateProductImages: (state, action) => {
+      const productId = action.payload;
+      console.log(`♻️ Invalidating cache for product ${productId}`);
+      if (state.imagesByProduct[productId]) {
+        state.imagesByProduct[productId] = [];
+      }
+      delete state.loading[productId];
+      delete state.errors[productId];
+    },
+    
     // Limpiar todas las imágenes
     clearAllImages: (state) => {
+      console.log('🗑️ Clearing all images');
       state.imagesByProduct = {};
       state.loading = {};
       state.errors = {};
@@ -112,11 +127,13 @@ const productImageSlice = createSlice({
         const { productId, images } = action.payload;
         state.loading[productId] = false;
         state.imagesByProduct[productId] = images;
+        console.log(`💾 Stored ${images.length} image(s) in Redux for product ${productId}`);
       })
       .addCase(fetchProductImages.rejected, (state, action) => {
         const productId = action.meta.arg;
         state.loading[productId] = false;
         state.errors[productId] = action.error.message;
+        console.error(`❌ Failed to fetch images for product ${productId}:`, action.error.message);
       });
 
     // ========== FETCH PRINCIPAL IMAGE ==========
@@ -180,11 +197,12 @@ const productImageSlice = createSlice({
         const { productId, imageId } = action.payload;
         state.loading[productId] = false;
         
-        // Actualizar isPrincipal en todas las imágenes del producto
+        // Actualizar isMain en todas las imágenes del producto
         if (state.imagesByProduct[productId]) {
           state.imagesByProduct[productId] = state.imagesByProduct[productId].map(img => ({
             ...img,
-            isPrincipal: img.imageId === imageId
+            isMain: img.imageId === imageId,
+            isPrincipal: img.imageId === imageId  // Mantener ambos por compatibilidad
           }));
         }
       })
@@ -226,24 +244,48 @@ const productImageSlice = createSlice({
 
 export const { 
   clearProductImages, 
+  invalidateProductImages,
   clearAllImages, 
   clearProductError 
 } = productImageSlice.actions;
 
-// Selectores (helpers para acceder al estado)
+// =============================================
+// SELECTORES (helpers para acceder al estado)
+// =============================================
+
+// Obtener todas las imágenes de un producto
 export const selectProductImages = (productId) => (state) => 
   state.productImage.imagesByProduct[productId] || [];
 
-export const selectPrincipalImage = (productId) => (state) => 
-  state.productImage.imagesByProduct[productId]?.find(img => img.isPrincipal) || null;
+// Obtener imágenes por productId (alternativa más usada)
+export const selectImagesByProduct = (state, productId) => {
+  const images = state.productImage.imagesByProduct[productId] || [];
+  console.log(`📸 Selector - Product ${productId}: ${images.length} image(s)`, images);
+  return images;
+};
 
+// Obtener imagen principal de un producto
+export const selectPrincipalImage = (productId) => (state) => 
+  state.productImage.imagesByProduct[productId]?.find(img => img.isMain || img.isPrincipal) || null;
+
+// Estado de carga de imágenes (general)
+export const selectImagesLoading = (state) => 
+  Object.values(state.productImage.loading).some(loading => loading);
+
+// Estado de carga de un producto específico
 export const selectImageLoading = (productId) => (state) => 
   state.productImage.loading[productId] || false;
 
+// Error de un producto específico
 export const selectImageError = (productId) => (state) => 
   state.productImage.errors[productId] || null;
 
+// Estado de subida de un producto
 export const selectImageUploading = (productId) => (state) => 
   state.productImage.uploading[productId] || { uploading: false };
+
+// Verificar si un producto tiene imágenes cargadas
+export const selectHasImages = (state, productId) => 
+  state.productImage.imagesByProduct[productId]?.length > 0;
 
 export default productImageSlice.reducer;

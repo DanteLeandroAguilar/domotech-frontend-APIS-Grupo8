@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
 import { cartAPI } from '../api/endpoints/cart';
+import { fetchProductImages } from '../store/slices/productImageSlice';
 
 const Cart = ({ cartItemsCount, updateCartCount }) => {
+  const dispatch = useDispatch();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,6 +21,14 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
       setLoading(true);
       const data = await cartAPI.getMyCart();
       setCart(data);
+      
+      // Pre-cargar imágenes de productos en el carrito
+      if (data?.items && data.items.length > 0) {
+        data.items.forEach(item => {
+          dispatch(fetchProductImages(item.productId));
+        });
+      }
+      
       if (updateCartCount) {
         updateCartCount();
       }

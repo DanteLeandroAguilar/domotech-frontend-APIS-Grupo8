@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
@@ -7,9 +8,11 @@ import { cartAPI } from '../api/endpoints/cart';
 import { ordersAPI } from '../api/endpoints/orders';
 import { formatPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
+import { fetchProductImages } from '../store/slices/productImageSlice';
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +39,13 @@ const Checkout = () => {
     try {
       const data = await cartAPI.getMyCart();
       setCart(data);
+      
+      // Pre-cargar imágenes de productos en checkout
+      if (data?.items && data.items.length > 0) {
+        data.items.forEach(item => {
+          dispatch(fetchProductImages(item.productId));
+        });
+      }
     } catch (error) {
       console.error('Error al cargar carrito:', error);
     }
@@ -149,7 +159,7 @@ const Checkout = () => {
                           onChange={handleChange}
                           required
                           className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
-                          placeholder="Av. Corrientes 1234"
+                          placeholder="Av. Rivadavia 1234"
                         />
                       </div>
                     </div>
@@ -180,7 +190,7 @@ const Checkout = () => {
                           onChange={handleChange}
                           required
                           className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
-                          placeholder="CABA"
+                          placeholder="Buenos Aires"
                         />
                       </div>
                     </div>
@@ -202,46 +212,47 @@ const Checkout = () => {
                   </div>
                 </section>
 
+                {/* Método de pago */}
                 <section className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <svg className="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3v-8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                     Método de Pago
                   </h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 dark:has-[:checked]:bg-primary/10 has-[:checked]:shadow-lg has-[:checked]:shadow-primary/20 transition-all duration-200">
+
+                  <div className="space-y-4">
+                    <label className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer hover:border-primary dark:hover:border-primary transition-all duration-200 has-[:checked]:border-primary has-[:checked]:bg-primary/5 dark:has-[:checked]:bg-primary/10">
                       <input
                         type="radio"
                         name="paymentMethod"
                         value="credit_card"
                         checked={formData.paymentMethod === 'credit_card'}
                         onChange={handleChange}
-                        className="w-5 h-5 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer"
+                        className="w-4 h-4 text-primary focus:ring-primary focus:ring-2"
                       />
-                      <span className="ml-3 text-sm font-semibold text-gray-900 dark:text-white">
-                        Tarjeta de Crédito / Débito
-                      </span>
+                      <span className="ml-3 font-semibold text-gray-900 dark:text-white">Tarjeta de Crédito/Débito</span>
                     </label>
-                    <label className="flex items-center p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 dark:has-[:checked]:bg-primary/10 has-[:checked]:shadow-lg has-[:checked]:shadow-primary/20 transition-all duration-200">
+
+                    <label className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer hover:border-primary dark:hover:border-primary transition-all duration-200 has-[:checked]:border-primary has-[:checked]:bg-primary/5 dark:has-[:checked]:bg-primary/10">
                       <input
                         type="radio"
                         name="paymentMethod"
                         value="paypal"
                         checked={formData.paymentMethod === 'paypal'}
                         onChange={handleChange}
-                        className="w-5 h-5 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer"
+                        className="w-4 h-4 text-primary focus:ring-primary focus:ring-2"
                       />
-                      <span className="ml-3 text-sm font-semibold text-gray-900 dark:text-white">PayPal</span>
+                      <span className="ml-3 font-semibold text-gray-900 dark:text-white">PayPal</span>
                     </label>
                   </div>
 
-                  {/* Formulario de Tarjeta de Crédito */}
+                  {/* Formulario de tarjeta */}
                   {formData.paymentMethod === 'credit_card' && (
-                    <div className="mt-6 space-y-5 pt-6 border-t-2 border-gray-100 dark:border-gray-700">
+                    <div className="mt-6 space-y-4 pt-6 border-t-2 border-gray-100 dark:border-gray-700">
                       <div>
                         <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">
-                          Nombre del Titular
+                          Nombre en la Tarjeta
                         </label>
                         <input
                           type="text"
@@ -249,38 +260,29 @@ const Checkout = () => {
                           value={formData.cardHolderName}
                           onChange={handleChange}
                           required
-                          placeholder="Como aparece en la tarjeta"
+                          placeholder="Juan Pérez"
                           className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
                         />
                       </div>
-
-                      <div className="relative">
+                      <div>
                         <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">
                           Número de Tarjeta
                         </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3v-8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                            </svg>
-                          </div>
-                          <input
-                            type="text"
-                            name="cardNumber"
-                            value={formData.cardNumber}
-                            onChange={handleChange}
-                            required
-                            maxLength="19"
-                            placeholder="•••• •••• •••• ••••"
-                            className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
-                          />
-                        </div>
+                        <input
+                          type="text"
+                          name="cardNumber"
+                          value={formData.cardNumber}
+                          onChange={handleChange}
+                          required
+                          maxLength="19"
+                          placeholder="1234 5678 9012 3456"
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
+                        />
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">
-                            Fecha de Expiración
+                            Fecha de Vencimiento
                           </label>
                           <input
                             type="text"
@@ -289,7 +291,7 @@ const Checkout = () => {
                             onChange={handleChange}
                             required
                             maxLength="5"
-                            placeholder="MM/YY"
+                            placeholder="MM/AA"
                             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
                           />
                         </div>

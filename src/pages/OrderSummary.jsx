@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
 import { ordersAPI } from '../api/endpoints/orders';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { Loading } from '../components/common/Loading';
+import { fetchProductImages } from '../store/slices/productImageSlice';
 
 const OrderSummary = () => {
+  const dispatch = useDispatch();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +23,15 @@ const OrderSummary = () => {
       const data = await ordersAPI.getMyOrders();
       if (data && data.length > 0) {
         // Obtener la orden más reciente
-        setOrder(data[data.length - 1]);
+        const latestOrder = data[data.length - 1];
+        setOrder(latestOrder);
+        
+        // Pre-cargar imágenes de productos en la orden
+        if (latestOrder?.details && latestOrder.details.length > 0) {
+          latestOrder.details.forEach(detail => {
+            dispatch(fetchProductImages(detail.productId));
+          });
+        }
       }
     } catch (error) {
       console.error('Error al cargar orden:', error);

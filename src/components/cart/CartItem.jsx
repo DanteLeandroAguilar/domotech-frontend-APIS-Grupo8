@@ -1,49 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { formatPrice } from '../../utils/formatters';
-import { imagesAPI } from '../../api/endpoints/images';
 import { cartAPI } from '../../api/endpoints/cart';
+import { selectImagesByProduct } from '../../store/slices/productImageSlice';
 
 export const CartItem = ({ item, onUpdate }) => {
   const [loading, setLoading] = useState(false);
 
-  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/100x100?text=Producto');
-
-  useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
-      let imageId = item.product?.principalImage?.imageId;
-      // Si el item del carrito no trae el objeto product, pedimos la imagen principal por productId
-      if (!imageId && item.productId) {
-        try {
-          const principal = await imagesAPI.getPrincipal(item.productId);
-          imageId = principal?.imageId;
-        } catch (e) {
-          imageId = null;
-        }
-      }
-      if (!imageId) {
-        setImageUrl('https://via.placeholder.com/100x100?text=Producto');
-        return;
-      }
-      try {
-        const token = localStorage.getItem('token');
-        const url = imagesAPI.getImageUrl(imageId);
-        const response = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
-        setImageUrl(createdUrl);
-      } catch (e) {
-        // Fallback a URL directa si el blob falla
-        setImageUrl(imagesAPI.getImageUrl(imageId));
-      }
-    };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
-  }, [item.product?.principalImage?.imageId]);
+  // Obtener imágenes desde Redux
+  const images = useSelector(state => selectImagesByProduct(state, item.productId));
+  const principalImage = images.find(img => img.isMain) || images[0];
+  const imageUrl = principalImage?.url || 'https://via.placeholder.com/100x100?text=Producto';
 
   const handleIncrease = async () => {
     setLoading(true);
@@ -91,18 +58,21 @@ export const CartItem = ({ item, onUpdate }) => {
   return (
     <div className="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800">
       {/* Imagen */}
-      <img
-        src={imageUrl}
-        alt={item.productName}
-        className="w-20 h-20 object-cover rounded"
-      />
+      <div className="w-20 h-20 flex-shrink-0">
+        <img
+          src={imageUrl}
+          alt={item.productName}
+          className="w-full h-full object-cover rounded"
+          loading="lazy"
+        />
+      </div>
 
       {/* Información del producto */}
-      <div className="flex-grow">
-        <h3 className="font-bold text-gray-900 dark:text-white">
+      <div className="flex-grow min-w-0">
+        <h3 className="font-bold text-gray-900 dark:text-white truncate">
           {item.productName}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {discount > 0 ? (
             <>
               <p className="text-sm text-gray-400 dark:text-gray-500 line-through">
@@ -128,7 +98,8 @@ export const CartItem = ({ item, onUpdate }) => {
         <button
           onClick={handleDecrease}
           disabled={loading || item.amount <= 1}
-          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Disminuir cantidad"
         >
           <span className="material-symbols-outlined text-lg">remove</span>
         </button>
@@ -136,7 +107,8 @@ export const CartItem = ({ item, onUpdate }) => {
         <button
           onClick={handleIncrease}
           disabled={loading}
-          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50"
+          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50 transition-colors"
+          aria-label="Aumentar cantidad"
         >
           <span className="material-symbols-outlined text-lg">add</span>
         </button>
@@ -152,6 +124,7 @@ export const CartItem = ({ item, onUpdate }) => {
         onClick={handleRemove}
         disabled={loading}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+        aria-label="Eliminar producto"
       >
         <span className="material-symbols-outlined">delete</span>
       </button>

@@ -11,13 +11,22 @@ export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5
   useEffect(() => {
     if (images && images.length > 0) {
       // Convertir las imágenes existentes al formato esperado
-      const formattedImages = images.map(img => ({
-        id: img.imageId || img.id,
-        url: img.url || imagesAPI.getImageUrl(img.imageId || img.id),
-        isMain: img.isMain || false,
-        isNew: img.isNew || false,
-        file: img.file // Solo existirá en imágenes nuevas
-      }));
+      const formattedImages = images.map(img => {
+        // Si ya tiene URL, usarla; si no, construirla desde imageId
+        let imageUrl = img.url;
+        if (!imageUrl && (img.imageId || img.id)) {
+          imageUrl = imagesAPI.getImageUrl(img.imageId || img.id);
+        }
+        
+        return {
+          id: img.imageId || img.id,
+          imageId: img.imageId || img.id,
+          url: imageUrl,
+          isMain: img.isMain || false,
+          isNew: img.isNew || false,
+          file: img.file // Solo existirá en imágenes nuevas
+        };
+      });
       setPreviewImages(formattedImages);
     } else {
       setPreviewImages([]);
@@ -90,6 +99,17 @@ export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5
     onImagesChange(updatedImages);
   };
 
+  // Cleanup: Revocar URLs de objetos cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      previewImages.forEach(img => {
+        if (img.isNew && img.url?.startsWith('blob:')) {
+          URL.revokeObjectURL(img.url);
+        }
+      });
+    };
+  }, [previewImages]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -151,6 +171,7 @@ export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5
                   src={image.url}
                   alt="Preview"
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               </div>
 

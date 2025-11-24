@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { ProductGrid } from '../components/products/ProductGrid';
 import { ProductFilters } from '../components/products/ProductFilters';
 import { Loading } from '../components/common/Loading';
 import { useProducts } from '../hooks/useProducts';
+import { fetchProductImages } from '../store/slices/productImageSlice';
 
 const Catalog = ({ cartItemsCount, updateCartCount }) => {
+  const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState({});
   const searchTerm = searchParams.get('search');
+  
+  // Ref para rastrear qué productos ya han sido cargados
+  const fetchedProductsRef = useRef(new Set());
 
   useEffect(() => {
     if (searchTerm) {
@@ -23,6 +29,19 @@ const Catalog = ({ cartItemsCount, updateCartCount }) => {
   }, [searchTerm]);
 
   const { products, loading, error, pagination, nextPage, prevPage, resetPage } = useProducts(filters);
+
+  // Cargar imágenes de todos los productos cuando cambien
+  useEffect(() => {
+    if (products.length > 0) {
+      products.forEach(product => {
+        // Solo cargar si NO se ha cargado antes
+        if (!fetchedProductsRef.current.has(product.productId)) {
+          fetchedProductsRef.current.add(product.productId);
+          dispatch(fetchProductImages(product.productId));
+        }
+      });
+    }
+  }, [products, dispatch]);
 
   const handleFilterChange = (newFilters) => {
     // Limpiar el parámetro de búsqueda de la URL cuando se usan filtros

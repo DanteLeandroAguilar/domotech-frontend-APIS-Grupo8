@@ -1,60 +1,48 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
-import { imagesAPI } from '../../api/endpoints/images';
-import { isSeller as authIsSeller } from '../../utils/auth';
 import { cartAPI } from '../../api/endpoints/cart';
+import { 
+  selectImagesByProduct, 
+  selectImagesLoading 
+} from '../../store/slices/productImageSlice';
+import { 
+  selectIsAuthenticated, 
+  selectUserRole 
+} from '../../store/slices/userSlice';
 
 export const ProductCard = ({ product, updateCartCount }) => {
   const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Estado de Redux
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userRole = useSelector(selectUserRole);
+  const images = useSelector(state => selectImagesByProduct(state, product.productId));
+  const imagesLoading = useSelector(selectImagesLoading);
+  
+  const isSeller = userRole === 'SELLER';
 
+  // Obtener la imagen principal desde Redux o usar placeholder
+  const principalImage = images.find(img => img.isMain) || images[0];
+  const imageUrl = principalImage?.url || 'https://via.placeholder.com/300x300?text=Sin+Imagen';
+
+  // Debug temporal - Verificar qué imágenes tiene cada producto
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  const isSeller = () => authIsSeller();
-
-  const [imageUrl, setImageUrl] = useState(
-    product.principalImage 
-      ? imagesAPI.getImageUrl(product.principalImage.imageId)
-      : 'https://via.placeholder.com/300x300?text=Sin+Imagen'
-  );
-
-  // Si las imágenes requieren auth y vienen como blob, creamos un Object URL
-  useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
-      if (!product?.principalImage?.imageId) return;
-      try {
-        const token = localStorage.getItem('token');
-        const url = imagesAPI.getImageUrl(product.principalImage.imageId);
-        const response = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
-        setImageUrl(createdUrl);
-      } catch (e) {
-        // fallback se mantiene a la URL directa
-      }
-    };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
-  }, [product?.principalImage?.imageId]);
+    console.log(`🖼️ Product ${product.productId} [${product.name}]:`, {
+      imagesCount: images.length,
+      principalImage,
+      imageUrl,
+      allImages: images
+    });
+  }, [images, product.productId, product.name, principalImage, imageUrl]);
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);
   const finalPrice = calculateDiscountedPrice(product.price, product.discount);
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated || isSeller()) return;
+    if (!isAuthenticated || isSeller) return;
 
     setLoading(true);
     try {
@@ -62,16 +50,15 @@ export const ProductCard = ({ product, updateCartCount }) => {
       const cart = await cartAPI.getMyCart();
       const existingItem = cart?.items?.find((it) => it.productId === product.productId);
       const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
-      const desired = currentAmount + 1;
-      const newAmount = desired;
+      const newAmount = currentAmount + 1;
 
       await cartAPI.updateProductAmount(product.productId, newAmount);
       if (updateCartCount) {
         updateCartCount();
       }
-      console.log('Producto agregado al carrito');
+      console.log('✅ Producto agregado al carrito');
     } catch (error) {
-      console.error('Error al agregar al carrito:', error);
+      console.error('❌ Error al agregar al carrito:', error);
     } finally {
       setLoading(false);
     }
@@ -83,15 +70,30 @@ export const ProductCard = ({ product, updateCartCount }) => {
       className="product-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
     >
       <div className="relative">
-        <div 
-          className="w-full h-56 bg-cover bg-center"
-          style={{ backgroundImage: `url(${imageUrl})` }}
-        />
+        <div className="w-full h-56 bg-gray-200 dark:bg-gray-700 relative overflow-hidden">
+          {imagesLoading && !principalImage ? (
+            // Skeleton loader mientras carga
+            <div className="absolute inset-0 bg-gray-300 dark:bg-gray-600 animate-pulse" />
+          ) : (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onError={(e) => {
+                console.error(`❌ Error al cargar imagen para producto ${product.productId}:`, imageUrl);
+                e.target.src = 'https://via.placeholder.com/300x300?text=Error+al+Cargar';
+              }}
+            />
+          )}
+        </div>
+        
         {discountPercentage > 0 && (
           <div className="absolute top-2 right-2 bg-green-500/30 text-xs px-2 py-1 rounded-full font-bold" style={{color:'#00FF7F'}}>
             {discountPercentage}% OFF
           </div>
         )}
+        
         {!product.active && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <span className="text-white font-bold">No Disponible</span>
@@ -124,7 +126,7 @@ export const ProductCard = ({ product, updateCartCount }) => {
             {product.available ? '' : 'Sin Stock'}
           </span>
 
-          {isAuthenticated && !isSeller() && product.active && product.available && (
+          {isAuthenticated && !isSeller && product.active && product.available && (
             <button
               onClick={handleAddToCart}
               disabled={loading || !product.available}

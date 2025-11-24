@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { ProductForm } from '../../components/admin/ProductForm';
@@ -7,8 +8,14 @@ import { Loading } from '../../components/common/Loading';
 import { productsAPI } from '../../api/endpoints/products';
 import { imagesAPI } from '../../api/endpoints/images';
 import { toast } from 'react-toastify';
+import { 
+  fetchProductImages, 
+  clearProductImages,
+  invalidateProductImages 
+} from '../../store/slices/productImageSlice';
 
 const ProductManagement = () => {
+  const dispatch = useDispatch();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -22,10 +29,16 @@ const ProductManagement = () => {
     try {
       setLoading(true);
       const data = await productsAPI.getAll(0, 100);
-      // Las imágenes ya vienen en la respuesta del producto
-      setProducts(data.content || []);
+      const productsData = data.content || [];
+      setProducts(productsData);
+      
+      // Pre-cargar imágenes de todos los productos
+      productsData.forEach(product => {
+        dispatch(fetchProductImages(product.productId));
+      });
     } catch (error) {
       console.error('Error al cargar productos:', error);
+      toast.error('Error al cargar productos');
     } finally {
       setLoading(false);
     }
@@ -110,6 +123,14 @@ const ProductManagement = () => {
             console.error('Error al marcar imagen principal:', error);
           }
         }
+
+        // Invalidar caché de imágenes del producto en Redux
+        dispatch(invalidateProductImages(productId));
+        
+        // Recargar imágenes del producto
+        setTimeout(() => {
+          dispatch(fetchProductImages(productId));
+        }, 500);
       }
 
       toast.success(editingProduct ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
@@ -134,6 +155,10 @@ const ProductManagement = () => {
 
     try {
       await productsAPI.delete(productId);
+      
+      // Limpiar imágenes del producto del store Redux
+      dispatch(clearProductImages(productId));
+      
       toast.success('Producto eliminado correctamente');
       loadProducts();
     } catch (error) {
