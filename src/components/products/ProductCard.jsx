@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { cartAPI } from '../../api/endpoints/cart';
@@ -18,24 +18,14 @@ export const ProductCard = ({ product, updateCartCount }) => {
   // Estado de Redux
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
-  const images = useSelector(state => selectImagesByProduct(state, product.productId));
+  const images = useSelector(state => selectImagesByProduct(state, product.productId)) || []; // ← Agregar || []
   const imagesLoading = useSelector(selectImagesLoading);
   
   const isSeller = userRole === 'SELLER';
 
   // Obtener la imagen principal desde Redux o usar placeholder
-  const principalImage = images.find(img => img.isMain) || images[0];
+  const principalImage = images.length > 0 ? (images.find(img => img.isMain) || images[0]) : null;
   const imageUrl = principalImage?.url || 'https://via.placeholder.com/300x300?text=Sin+Imagen';
-
-  // Debug temporal - Verificar qué imágenes tiene cada producto
-  useEffect(() => {
-    console.log(`🖼️ Product ${product.productId} [${product.name}]:`, {
-      imagesCount: images.length,
-      principalImage,
-      imageUrl,
-      allImages: images
-    });
-  }, [images, product.productId, product.name, principalImage, imageUrl]);
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);
   const finalPrice = calculateDiscountedPrice(product.price, product.discount);
@@ -46,7 +36,6 @@ export const ProductCard = ({ product, updateCartCount }) => {
 
     setLoading(true);
     try {
-      // Obtener cantidad actual en carrito para este producto y sumar 1
       const cart = await cartAPI.getMyCart();
       const existingItem = cart?.items?.find((it) => it.productId === product.productId);
       const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
@@ -56,9 +45,8 @@ export const ProductCard = ({ product, updateCartCount }) => {
       if (updateCartCount) {
         updateCartCount();
       }
-      console.log('✅ Producto agregado al carrito');
     } catch (error) {
-      console.error('❌ Error al agregar al carrito:', error);
+      console.error('Error al agregar al carrito:', error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +60,6 @@ export const ProductCard = ({ product, updateCartCount }) => {
       <div className="relative">
         <div className="w-full h-56 bg-gray-200 dark:bg-gray-700 relative overflow-hidden">
           {imagesLoading && !principalImage ? (
-            // Skeleton loader mientras carga
             <div className="absolute inset-0 bg-gray-300 dark:bg-gray-600 animate-pulse" />
           ) : (
             <img
@@ -80,10 +67,6 @@ export const ProductCard = ({ product, updateCartCount }) => {
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
-              onError={(e) => {
-                console.error(`❌ Error al cargar imagen para producto ${product.productId}:`, imageUrl);
-                e.target.src = 'https://via.placeholder.com/300x300?text=Error+al+Cargar';
-              }}
             />
           )}
         </div>

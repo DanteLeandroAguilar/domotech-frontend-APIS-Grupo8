@@ -29,9 +29,9 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
         });
       }
       
-      if (updateCartCount) {
-        updateCartCount();
-      }
+      //if (updateCartCount) {
+        //updateCartCount();
+      //}
     } catch (error) {
       console.error('Error al cargar carrito:', error);
       setCart({

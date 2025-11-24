@@ -9,9 +9,7 @@ import { imagesAPI } from '../../api/endpoints/images';
 export const fetchProductImages = createAsyncThunk(
   'productImage/fetchByProduct',
   async (productId) => {
-    console.log(`🔄 Fetching images for product ${productId}...`);
     const images = await imagesAPI.getByProduct(productId);
-    console.log(`✅ Fetched ${images.length} image(s) for product ${productId}:`, images);
     return { productId, images };
   }
 );
@@ -82,7 +80,6 @@ const productImageSlice = createSlice({
     // Limpiar imágenes de un producto específico
     clearProductImages: (state, action) => {
       const productId = action.payload;
-      console.log(`🗑️ Clearing images for product ${productId}`);
       delete state.imagesByProduct[productId];
       delete state.loading[productId];
       delete state.errors[productId];
@@ -92,7 +89,6 @@ const productImageSlice = createSlice({
     // Invalidar caché de un producto (forzar recarga)
     invalidateProductImages: (state, action) => {
       const productId = action.payload;
-      console.log(`♻️ Invalidating cache for product ${productId}`);
       if (state.imagesByProduct[productId]) {
         state.imagesByProduct[productId] = [];
       }
@@ -102,7 +98,6 @@ const productImageSlice = createSlice({
     
     // Limpiar todas las imágenes
     clearAllImages: (state) => {
-      console.log('🗑️ Clearing all images');
       state.imagesByProduct = {};
       state.loading = {};
       state.errors = {};
@@ -127,13 +122,11 @@ const productImageSlice = createSlice({
         const { productId, images } = action.payload;
         state.loading[productId] = false;
         state.imagesByProduct[productId] = images;
-        console.log(`💾 Stored ${images.length} image(s) in Redux for product ${productId}`);
       })
       .addCase(fetchProductImages.rejected, (state, action) => {
         const productId = action.meta.arg;
         state.loading[productId] = false;
         state.errors[productId] = action.error.message;
-        console.error(`❌ Failed to fetch images for product ${productId}:`, action.error.message);
       });
 
     // ========== FETCH PRINCIPAL IMAGE ==========
@@ -258,11 +251,8 @@ export const selectProductImages = (productId) => (state) =>
   state.productImage.imagesByProduct[productId] || [];
 
 // Obtener imágenes por productId (alternativa más usada)
-export const selectImagesByProduct = (state, productId) => {
-  const images = state.productImage.imagesByProduct[productId] || [];
-  console.log(`📸 Selector - Product ${productId}: ${images.length} image(s)`, images);
-  return images;
-};
+export const selectImagesByProduct = (state, productId) => 
+  state.productImage.imagesByProduct[productId];
 
 // Obtener imagen principal de un producto
 export const selectPrincipalImage = (productId) => (state) => 
