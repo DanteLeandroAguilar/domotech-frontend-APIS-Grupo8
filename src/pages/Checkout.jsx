@@ -1,23 +1,33 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Header } from '../components/common/Header';
-import { Footer } from '../components/common/Footer';
-import { Button } from '../components/common/Button';
-import { useCart } from '../hooks/useCart';
-import { ordersAPI } from '../api/endpoints/orders';
-import { formatPrice } from '../utils/formatters';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Header } from "../components/common/Header";
+import { Footer } from "../components/common/Footer";
+import { Button } from "../components/common/Button";
+import { useCart } from "../hooks/useCart";
+import { formatPrice } from "../utils/formatters";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  confirmOrder,
+  fetchMyOrders,
+  resetConfirmState,
+  selectConfirmError,
+  selectConfirmStatus,
+} from "../store/slices/ordersSlice";
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { cart, getCartTotal } = useCart();
-  const [loading, setLoading] = useState(false);
+  const confirmStatus = useSelector(selectConfirmStatus);
+  const confirmError = useSelector(selectConfirmError);
+  const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    paymentMethod: 'credit_card',
+    fullName: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    paymentMethod: "credit_card",
   });
 
   const handleChange = (e) => {
@@ -29,24 +39,32 @@ const Checkout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    setLoading(true);
-    try {
-      await ordersAPI.confirm();
-      navigate('/order-summary');
-    } catch (error) {
-      alert(error.response?.data?.message || 'Error al procesar la orden');
-    } finally {
-      setLoading(false);
-    }
+    setSubmitted(true);
+    dispatch(confirmOrder());
   };
 
+  useEffect(() => {
+    if (!submitted) return;
+
+    if (confirmStatus === "succeeded") {
+      dispatch(fetchMyOrders());
+      dispatch(resetConfirmState());
+      setSubmitted(false);
+      navigate("/order-summary");
+    } else if (confirmStatus === "failed" && confirmError) {
+      alert(confirmError);
+      dispatch(resetConfirmState());
+      setSubmitted(false);
+    }
+  }, [confirmStatus, confirmError, submitted, dispatch, navigate]);
+
   const total = getCartTotal();
+  const isSubmitting = confirmStatus === "loading";
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
+
       <main className="flex-grow container mx-auto px-4 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
@@ -145,7 +163,7 @@ const Checkout = () => {
                         type="radio"
                         name="paymentMethod"
                         value="credit_card"
-                        checked={formData.paymentMethod === 'credit_card'}
+                        checked={formData.paymentMethod === "credit_card"}
                         onChange={handleChange}
                         className="text-primary focus:ring-primary"
                       />
@@ -158,7 +176,7 @@ const Checkout = () => {
                         type="radio"
                         name="paymentMethod"
                         value="paypal"
-                        checked={formData.paymentMethod === 'paypal'}
+                        checked={formData.paymentMethod === "paypal"}
                         onChange={handleChange}
                         className="text-primary focus:ring-primary"
                       />
@@ -177,7 +195,10 @@ const Checkout = () => {
 
                   <div className="space-y-4 mb-6">
                     {cart?.items?.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-sm"
+                      >
                         <span className="text-gray-600 dark:text-gray-300">
                           {item.productName} x {item.amount}
                         </span>
@@ -204,10 +225,10 @@ const Checkout = () => {
                   <Button
                     type="submit"
                     fullWidth
-                    disabled={loading}
+                    disabled={isSubmitting}
                     className="mt-6"
                   >
-                    {loading ? 'Procesando...' : 'Confirmar Compra'}
+                    {isSubmitting ? "Procesando..." : "Confirmar Compra"}
                   </Button>
                 </div>
               </div>
