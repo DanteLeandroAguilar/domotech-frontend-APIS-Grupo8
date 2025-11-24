@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   logoutUser, 
+  fetchLoggedUser,
   selectUser, 
   selectIsAuthenticated, 
   selectUserRole,
@@ -25,12 +26,26 @@ export const Header = ({ cartItemsCount = 0 }) => {
 
   // Cargar usuario desde token al montar
   useEffect(() => {
-    if (!isAuthenticated) {
-      const token = localStorage.getItem('token');
-      if (token) {
-        dispatch(loadUserFromToken());
+    const loadUserData = async () => {
+      if (!isAuthenticated) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            // 1. Cargar datos básicos desde token
+            await dispatch(loadUserFromToken()).unwrap();
+            
+            // 2. Cargar datos completos desde /users/me
+            await dispatch(fetchLoggedUser()).unwrap();
+          } catch (error) {
+            console.error('Error loading user:', error);
+            // Si falla, hacer logout
+            dispatch(logoutUser());
+          }
+        }
       }
-    }
+    };
+    
+    loadUserData();
   }, [dispatch, isAuthenticated]);
 
   const isSeller = () => userRole === 'SELLER';

@@ -52,13 +52,13 @@ export const authAPI = {
   },
 
   // PUT /auth/{id} - Actualizar información del usuario
-  updateUser: async (id, userData) => {
-    try {
-      const data = await api.put(`/users/${id}`, userData);
-      return data;
-    } catch (error) {
-      const message = error.message || 'Error al actualizar información del usuario';
-      throw new Error(message);
-    }
-  },
+ updateUser: async (userId, userData) => {
+  try {
+    const data = await api.put(`/users/${userId}`, userData);
+    return data;
+  } catch (error) {
+    const message = error.message || 'Error al actualizar usuario';
+    throw new Error(message);
+  }
+},
 };

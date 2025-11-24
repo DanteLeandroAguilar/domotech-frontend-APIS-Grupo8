@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { loginUser, selectUserLoading, selectUserError, clearError } from '../store/slices/userSlice';
+import { loginUser, fetchLoggedUser, selectUserLoading, selectUserError, clearError } from '../store/slices/userSlice';
 import { toast } from 'react-toastify';
 
 const Login = ({ cartItemsCount }) => {
@@ -46,10 +46,13 @@ const Login = ({ cartItemsCount }) => {
     }
 
     try {
-      // Dispatch de la acción de Redux
-      const result = await dispatch(loginUser(formData)).unwrap();
+      // 1. Login - Obtiene token y datos básicos del JWT
+      await dispatch(loginUser(formData)).unwrap();
       
-      // Si llega aquí, el login fue exitoso
+      // 2. Cargar datos completos del usuario desde /users/me
+      await dispatch(fetchLoggedUser()).unwrap();
+      
+      // Si llega aquí, todo fue exitoso
       toast.success('Sesión iniciada');
       navigate('/');
     } catch (err) {

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { registerUser, selectUserLoading, selectUserError, clearError } from '../store/slices/userSlice';
+import { registerUser, fetchLoggedUser, selectUserLoading, selectUserError, clearError } from '../store/slices/userSlice';
 import { toast } from 'react-toastify';
 
 const Register = ({ cartItemsCount }) => {
@@ -66,10 +66,13 @@ const Register = ({ cartItemsCount }) => {
         role: formData.role,
       };
 
-      // Dispatch de la acción de Redux
+      // 1. Register - Obtiene token y datos básicos del JWT
       await dispatch(registerUser(userData)).unwrap();
       
-      // Si llega aquí, el registro fue exitoso
+      // 2. Cargar datos completos del usuario desde /users/me
+      await dispatch(fetchLoggedUser()).unwrap();
+      
+      // Si llega aquí, todo fue exitoso
       toast.success('Cuenta creada correctamente');
       navigate('/');
     } catch (err) {

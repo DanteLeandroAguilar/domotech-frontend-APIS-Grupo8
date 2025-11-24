@@ -51,8 +51,8 @@ const Profile = ({ cartItemsCount }) => {
       setFormData({
         username: user.username || '',
         email: user.email || '',
-        name: user.name || user.firstname || '',
-        lastName: user.lastName || user.lastname || '',
+        name: user.name || '',
+        lastName: user.lastName || '',
       });
     }
   }, [user]);
@@ -185,8 +185,8 @@ const Profile = ({ cartItemsCount }) => {
       setFormData({
         username: user.username || '',
         email: user.email || '',
-        name: user.name || user.firstname || '',
-        lastName: user.lastName || user.lastname || '',
+        name: user.name || '',
+        lastName: user.lastName || '',
       });
     }
   };
@@ -200,23 +200,23 @@ const Profile = ({ cartItemsCount }) => {
   };
 
   const handleSaveChanges = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  try {
+    await dispatch(updateUserProfile({
+      userId: user.idUser,
+      userData: formData
+    })).unwrap();
     
-    try {
-      await dispatch(updateUserProfile({
-        userId: user.userId,
-        userData: formData
-      })).unwrap();
-      
-      setIsEditing(false);
-      setSaveSuccess(true);
-      toast.success('Perfil actualizado correctamente');
-      
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
-      toast.error(err || 'Error al actualizar el perfil');
-    }
-  };
+    setIsEditing(false);
+    setSaveSuccess(true);
+    toast.success('Perfil actualizado correctamente');
+    
+    setTimeout(() => setSaveSuccess(false), 3000);
+  } catch (err) {
+    toast.error(err || 'Error al actualizar el perfil');
+  }
+};
 
   if (loading) {
     return (
@@ -404,11 +404,11 @@ const Profile = ({ cartItemsCount }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Nombre</p>
-                      <p className="font-medium">{user.name || user.firstname || '-'}</p>
+                      <p className="font-medium">{user.name || '-'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Apellido</p>
-                      <p className="font-medium">{user.lastName || user.lastname || '-'}</p>
+                      <p className="font-medium">{user.lastName || '-'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>

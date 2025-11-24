@@ -1,47 +1,68 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authAPI } from '../../api/endpoints/auth';
 
-// =============================================
-// THUNKS (Acciones Asíncronas)
-// =============================================
+// Estado inicial
+const initialState = {
+  currentUser: null,
+  token: null,
+  isAuthenticated: false,
+  loading: false,
+  error: null,
+};
 
-// Login de usuario
+// Thunks (acciones asíncronas)
+
+// Login
 export const loginUser = createAsyncThunk(
   'user/login',
   async (credentials) => {
     const response = await authAPI.login(credentials);
     
+    // El backend devuelve { access_token: "..." }
+    const token = response.access_token;
+    
     // Guardar token en localStorage
-    if (response.token) {
-      localStorage.setItem('token', response.token);
-    }
+    localStorage.setItem('token', token);
+    
+    // Decodificar JWT para obtener datos básicos
+    const payload = JSON.parse(atob(token.split('.')[1]));
     
     return {
-      token: response.token,
-      user: response.user || null
+      token,
+      user: {
+        email: payload.sub,
+        role: payload.role
+      }
     };
   }
 );
 
-// Registro de usuario
+// Register
 export const registerUser = createAsyncThunk(
   'user/register',
   async (userData) => {
     const response = await authAPI.register(userData);
     
+    // El backend devuelve { access_token: "..." }
+    const token = response.access_token;
+    
     // Guardar token en localStorage
-    if (response.token) {
-      localStorage.setItem('token', response.token);
-    }
+    localStorage.setItem('token', token);
+    
+    // Decodificar JWT para obtener datos básicos
+    const payload = JSON.parse(atob(token.split('.')[1]));
     
     return {
-      token: response.token,
-      user: response.user || null
+      token,
+      user: {
+        email: payload.sub,
+        role: payload.role
+      }
     };
   }
 );
 
-// Obtener información del usuario autenticado
+// Fetch logged user (GET /users/me)
 export const fetchLoggedUser = createAsyncThunk(
   'user/fetchLoggedUser',
   async () => {
@@ -50,54 +71,44 @@ export const fetchLoggedUser = createAsyncThunk(
   }
 );
 
-// Cargar usuario desde token (al iniciar la app)
+// Load user from token (cuando refresca la página)
 export const loadUserFromToken = createAsyncThunk(
-  'user/loadFromToken',
+  'user/loadUserFromToken',
   async () => {
     const token = localStorage.getItem('token');
     
     if (!token) {
       throw new Error('No hay token');
     }
-
-    // Decodificar token para obtener datos básicos
+    
+    // Decodificar JWT
     const payload = JSON.parse(atob(token.split('.')[1]));
     
     return {
       token,
       user: {
         email: payload.sub,
-        role: payload.role,
-        userId: payload.userId
+        role: payload.role
       }
     };
   }
 );
 
-// Actualizar perfil de usuario
+// Update user profile
 export const updateUserProfile = createAsyncThunk(
   'user/updateProfile',
   async ({ userId, userData }) => {
-    const response = await authAPI.updateUser(userId, userData);
-    return response;
+    const updatedUser = await authAPI.updateUser(userId, userData);
+    return updatedUser;
   }
 );
 
-// =============================================
-// SLICE
-// =============================================
-
+// Slice
 const userSlice = createSlice({
   name: 'user',
-  initialState: {
-    currentUser: null,
-    token: null,
-    isAuthenticated: false,
-    loading: false,
-    error: null,
-  },
+  initialState,
   reducers: {
-    // Logout (acción síncrona)
+    // Logout (síncrono)
     logoutUser: (state) => {
       state.currentUser = null;
       state.token = null;
@@ -106,13 +117,13 @@ const userSlice = createSlice({
       localStorage.removeItem('token');
     },
     
-    // Limpiar errores
+    // Clear error
     clearError: (state) => {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
-    // ========== LOGIN ==========
+    // Login
     builder
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
@@ -128,10 +139,9 @@ const userSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
-        state.isAuthenticated = false;
       });
 
-    // ========== REGISTER ==========
+    // Register
     builder
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
@@ -147,10 +157,9 @@ const userSlice = createSlice({
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
-        state.isAuthenticated = false;
       });
 
-    // ========== FETCH LOGGED USER ==========
+    // Fetch logged user
     builder
       .addCase(fetchLoggedUser.pending, (state) => {
         state.loading = true;
@@ -158,7 +167,11 @@ const userSlice = createSlice({
       })
       .addCase(fetchLoggedUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentUser = action.payload;
+        // Actualizar con datos completos del backend
+        state.currentUser = {
+          ...state.currentUser,
+          ...action.payload
+        };
         state.error = null;
       })
       .addCase(fetchLoggedUser.rejected, (state, action) => {
@@ -166,26 +179,28 @@ const userSlice = createSlice({
         state.error = action.error.message;
       });
 
-    // ========== LOAD FROM TOKEN ==========
+    // Load user from token
     builder
       .addCase(loadUserFromToken.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(loadUserFromToken.fulfilled, (state, action) => {
         state.loading = false;
         state.token = action.payload.token;
         state.currentUser = action.payload.user;
         state.isAuthenticated = true;
+        state.error = null;
       })
-      .addCase(loadUserFromToken.rejected, (state) => {
+      .addCase(loadUserFromToken.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.error.message;
         state.isAuthenticated = false;
-        state.currentUser = null;
-        state.token = null;
+        // Limpiar localStorage si el token es inválido
         localStorage.removeItem('token');
       });
 
-    // ========== UPDATE PROFILE ==========
+    // Update user profile
     builder
       .addCase(updateUserProfile.pending, (state) => {
         state.loading = true;
@@ -193,7 +208,10 @@ const userSlice = createSlice({
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentUser = { ...state.currentUser, ...action.payload };
+        state.currentUser = {
+          ...state.currentUser,
+          ...action.payload
+        };
         state.error = null;
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
@@ -203,13 +221,10 @@ const userSlice = createSlice({
   },
 });
 
-// =============================================
-// EXPORTS
-// =============================================
-
+// Exportar acciones
 export const { logoutUser, clearError } = userSlice.actions;
 
-// Selectores (para acceder al estado fácilmente)
+// Selectores
 export const selectUser = (state) => state.user.currentUser;
 export const selectToken = (state) => state.user.token;
 export const selectIsAuthenticated = (state) => state.user.isAuthenticated;
@@ -217,4 +232,5 @@ export const selectUserLoading = (state) => state.user.loading;
 export const selectUserError = (state) => state.user.error;
 export const selectUserRole = (state) => state.user.currentUser?.role;
 
+// Exportar reducer
 export default userSlice.reducer;
