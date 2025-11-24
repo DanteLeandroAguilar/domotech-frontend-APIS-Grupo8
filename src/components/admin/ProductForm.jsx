@@ -35,7 +35,6 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
         active: product.active !== undefined ? product.active : true,
       });
       
-      // Cargar imágenes existentes del producto
       if (product.images && product.images.length > 0) {
         const existingImages = product.images.map(img => ({
           id: img.imageId || img.id,

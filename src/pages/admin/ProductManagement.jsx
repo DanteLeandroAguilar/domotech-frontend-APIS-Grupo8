@@ -150,7 +150,7 @@ const ProductManagement = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-grow container mx-auto px-0 sm:px-4 lg:px-0 py-8">
         <h2 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
           Gestionar Productos
         </h2>
@@ -158,7 +158,7 @@ const ProductManagement = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Formulario */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-background-dark p-6 rounded-lg border border-gray-200 dark:border-gray-800 sticky top-24">
+            <div className="bg-white dark:bg-background-dark p-6 rounded-lg border border-gray-200 dark:border-gray-800 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold">
                   {editingProduct ? 'Editar Producto' : 'Añadir Producto'}

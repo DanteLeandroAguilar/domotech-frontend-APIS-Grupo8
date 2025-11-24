@@ -493,15 +493,16 @@ const Profile = ({ cartItemsCount }) => {
                                         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                           <span>Cantidad: {detail.quantity}</span>
                                           <span>×</span>
-                                          <span>{formatPrice(detail.unitPrice)}</span>
-                                          {detail.appliedDiscount > 0 && (
+                                          {detail.appliedDiscount > 0 ? (
                                             <>
-                                              <span>=</span>
                                               <span className="line-through">
                                                 {formatPrice(detail.unitPrice * detail.quantity)}
                                               </span>
                                             </>
-                                          )}
+                                          )
+                                          :
+                                          <span>{formatPrice(detail.unitPrice)}</span>
+                                          }
                                         </div>
                                         {detail.appliedDiscount > 0 && (
                                           <div className="flex items-center gap-2 text-xs">

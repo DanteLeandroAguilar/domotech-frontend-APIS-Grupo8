@@ -21,7 +21,6 @@ export const useProducts = (filters = {}) => {
       setLoading(true);
       setError(null);
       
-      // Siempre usar el endpoint filter con todos los parámetros
       const data = await productsAPI.filter({
         ...filters,
         page: pagination.page,
