@@ -1,15 +1,29 @@
 import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
-import { authAPI } from '../api/endpoints/auth';
+import { 
+  fetchLoggedUser, 
+  updateUserProfile, 
+  selectUser, 
+  selectIsAuthenticated,
+  selectUserLoading,
+  selectUserError 
+} from '../store/slices/userSlice';
 import { ordersAPI } from '../api/endpoints/orders';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
+import { toast } from 'react-toastify';
 
 const Profile = ({ cartItemsCount }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  
+  // Estado de Redux
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const loading = useSelector(selectUserLoading);
+  const error = useSelector(selectUserError);
+  
+  // Estado local
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -18,43 +32,32 @@ const Profile = ({ cartItemsCount }) => {
     lastName: '',
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' o 'orders'
+  const [activeTab, setActiveTab] = useState('profile');
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [ordersError, setOrdersError] = useState(null);
   const [productImages, setProductImages] = useState({});
 
+  // Cargar datos del usuario al montar
   useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
+    if (isAuthenticated && !user) {
+      dispatch(fetchLoggedUser());
+    }
+  }, [dispatch, isAuthenticated, user]);
 
-      setIsAuthenticated(true);
-      try {
-        const userData = await authAPI.getLoggedUser();
-        setUserInfo(userData);
-        setFormData({
-          username: userData.username || '',
-          email: userData.email || '',
-          name: userData.name || '',
-          lastName: userData.lastName || '',
-        });
-      } catch (err) {
-        console.error('Error al obtener datos del usuario:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Actualizar formData cuando cambia el usuario
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        username: user.username || '',
+        email: user.email || '',
+        name: user.name || user.firstname || '',
+        lastName: user.lastName || user.lastname || '',
+      });
+    }
+  }, [user]);
 
-    fetchUserData();
-  }, []);
-
+  // Cargar órdenes cuando se cambia al tab de orders
   useEffect(() => {
     if (activeTab === 'orders' && isAuthenticated && orders.length === 0) {
       fetchOrders();
@@ -87,7 +90,6 @@ const Profile = ({ cartItemsCount }) => {
       const images = {};
       const token = localStorage.getItem('token');
       
-      // Recopilar todos los productIds únicos de todas las órdenes
       const productIds = new Set();
       orders.forEach(order => {
         order.details?.forEach(detail => {
@@ -95,7 +97,6 @@ const Profile = ({ cartItemsCount }) => {
         });
       });
 
-      // Cargar imágenes de todos los productos
       await Promise.all(
         Array.from(productIds).map(async (productId) => {
           try {
@@ -122,7 +123,6 @@ const Profile = ({ cartItemsCount }) => {
     }
   };
 
-  // Limpiar Object URLs al desmontar el componente
   useEffect(() => {
     return () => {
       Object.values(productImages).forEach((url) => URL.revokeObjectURL(url));
@@ -177,19 +177,18 @@ const Profile = ({ cartItemsCount }) => {
   const handleEditClick = () => {
     setIsEditing(true);
     setSaveSuccess(false);
-    setSaveError(null);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setSaveError(null);
-    // Restaurar los datos originales
-    setFormData({
-      username: userInfo.username || '',
-      email: userInfo.email || '',
-      name: userInfo.name || '',
-      lastName: userInfo.lastName || '',
-    });
+    if (user) {
+      setFormData({
+        username: user.username || '',
+        email: user.email || '',
+        name: user.name || user.firstname || '',
+        lastName: user.lastName || user.lastname || '',
+      });
+    }
   };
 
   const handleInputChange = (e) => {
@@ -200,86 +199,108 @@ const Profile = ({ cartItemsCount }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSaveChanges = async (e) => {
     e.preventDefault();
-    setSaveError(null);
-    setSaveSuccess(false);
-
+    
     try {
-      const updatedUser = await authAPI.updateUser(userInfo.idUser, formData);
-      setUserInfo(updatedUser);
+      await dispatch(updateUserProfile({
+        userId: user.userId,
+        userData: formData
+      })).unwrap();
+      
       setIsEditing(false);
       setSaveSuccess(true);
+      toast.success('Perfil actualizado correctamente');
+      
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      console.error('Error al actualizar usuario:', err);
-      setSaveError(err.message);
+      toast.error(err || 'Error al actualizar el perfil');
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Header cartItemsCount={cartItemsCount} />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg">
+            <p className="text-gray-600 dark:text-gray-400">Cargando perfil...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Header cartItemsCount={cartItemsCount} />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg">
+            <p className="text-gray-600 dark:text-gray-400">
+              Debes iniciar sesión para ver tu perfil.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col items-center gap-6 mb-8">
-            <div className="w-32 h-32 bg-primary/20 rounded-full flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-6xl">person</span>
-            </div>
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {userInfo ? `${userInfo.name} ${userInfo.lastName}` : 'Mi Perfil'}
-              </h1>
-              {userInfo && (
-                <>
-                  <p className="mt-1 text-gray-500 dark:text-gray-400">{userInfo.email}</p>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Miembro desde {formatDate(userInfo.registrationDate)}
-                  </p>
-                </>
-              )}
-            </div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Mi Perfil
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Administra tu información personal y consulta tus pedidos
+            </p>
           </div>
 
-          {/* Tabs Navigation */}
-          <div className="border-b border-gray-200 dark:border-gray-700/50 mb-8">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          {/* Tabs */}
+          <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+            <nav className="flex space-x-8">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'profile'
                     ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
               >
-                Perfil
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-xl">person</span>
+                  Información Personal
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab('orders')}
-                className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'orders'
                     ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
               >
-                Pedidos
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-xl">shopping_bag</span>
+                  Mis Pedidos
+                </span>
               </button>
             </nav>
           </div>
 
-          {saveSuccess && (
-            <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 rounded-lg">
-              ✓ Información actualizada correctamente
-            </div>
-          )}
-
           {/* Profile Tab Content */}
           {activeTab === 'profile' && (
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Información del Perfil</h2>
-                {isAuthenticated && userInfo && !isEditing && (
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Información Personal
+                </h2>
+                {!isEditing && (
                   <button
                     onClick={handleEditClick}
                     className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
@@ -289,131 +310,123 @@ const Profile = ({ cartItemsCount }) => {
                   </button>
                 )}
               </div>
-              
-              {loading ? (
-                <p className="text-gray-600 dark:text-gray-400">Cargando información...</p>
-              ) : error ? (
-                <p className="text-red-600 dark:text-red-400">Error: {error}</p>
-              ) : isAuthenticated ? (
-                userInfo ? (
-                  isEditing ? (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      {saveError && (
-                        <div className="p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg text-sm">
-                          {saveError}
-                        </div>
-                      )}
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Nombre
-                          </label>
-                          <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Apellido
-                          </label>
-                          <input
-                            type="text"
-                            id="lastName"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Usuario
-                          </label>
-                          <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
-                            required
-                          />
-                        </div>
+
+              {saveSuccess && (
+                <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 rounded-lg">
+                  <p className="text-sm text-green-700 dark:text-green-200">
+                    ✓ Perfil actualizado correctamente
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 rounded-lg">
+                  <p className="text-sm text-red-700 dark:text-red-200">
+                    Error: {error}
+                  </p>
+                </div>
+              )}
+
+              {user ? (
+                isEditing ? (
+                  <form onSubmit={handleSaveChanges} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Nombre
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
                       </div>
 
-                      <div className="flex gap-3 pt-4">
-                        <button
-                          type="submit"
-                          className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
-                        >
-                          Guardar Cambios
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCancelEdit}
-                          className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Nombre</p>
-                        <p className="font-medium">{userInfo.name || '-'}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Apellido
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
                       </div>
+
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Apellido</p>
-                        <p className="font-medium">{userInfo.lastName || '-'}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
                       </div>
+
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                        <p className="font-medium">{userInfo.email || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Usuario</p>
-                        <p className="font-medium">{userInfo.username || '-'}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Fecha de Registro</p>
-                        <p className="font-medium">{formatDate(userInfo.registrationDate)}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Usuario
+                        </label>
+                        <input
+                          type="text"
+                          name="username"
+                          value={formData.username}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
                       </div>
                     </div>
-                  )
+
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                      >
+                        Guardar Cambios
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
                 ) : (
-                  <p className="text-gray-600 dark:text-gray-400">
-                    No se pudo obtener la información del usuario.
-                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Nombre</p>
+                      <p className="font-medium">{user.name || user.firstname || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Apellido</p>
+                      <p className="font-medium">{user.lastName || user.lastname || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                      <p className="font-medium">{user.email || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Usuario</p>
+                      <p className="font-medium">{user.username || '-'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Fecha de Registro</p>
+                      <p className="font-medium">{formatDate(user.registrationDate)}</p>
+                    </div>
+                  </div>
                 )
               ) : (
                 <p className="text-gray-600 dark:text-gray-400">
-                  Debes iniciar sesión para ver tu información de perfil.
+                  No se pudo obtener la información del usuario.
                 </p>
               )}
             </div>
@@ -465,7 +478,6 @@ const Profile = ({ cartItemsCount }) => {
                           order.details.map((detail) => (
                             <div key={detail.id} className="border-b border-gray-100 dark:border-gray-700/50 pb-3 last:border-b-0 last:pb-0">
                               <div className="flex gap-4">
-                                {/* Imagen del producto */}
                                 <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden">
                                   {productImages[detail.productId] ? (
                                     <img
@@ -482,7 +494,6 @@ const Profile = ({ cartItemsCount }) => {
                                   )}
                                 </div>
 
-                                {/* Información del producto */}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1 min-w-0 pr-4">

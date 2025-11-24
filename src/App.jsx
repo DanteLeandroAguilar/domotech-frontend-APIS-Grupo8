@@ -1,3 +1,5 @@
+import { Provider } from 'react-redux';
+import { store } from './store/store';
 import { useState, useEffect } from 'react';
 import { AppRoutes } from './routes/AppRoutes';
 import { ToastContainer } from 'react-toastify';
@@ -5,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { cartAPI } from './api/endpoints/cart';
 import { isBuyer, isAuthenticated } from './utils/auth';
 
-function App() {
+function AppContent() {
   const [cartItemsCount, setCartItemsCount] = useState(0);
 
   useEffect(() => {
@@ -38,6 +40,14 @@ function App() {
       <AppRoutes cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
       <ToastContainer />
     </>
+  );
+}
+
+function App() {
+  return (
+    <Provider store={store}>
+      <AppContent />
+    </Provider>
   );
 }
 

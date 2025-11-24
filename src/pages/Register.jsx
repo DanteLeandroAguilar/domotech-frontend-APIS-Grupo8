@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { authAPI } from '../api/endpoints/auth';
+import { registerUser, selectUserLoading, selectUserError, clearError } from '../store/slices/userSlice';
 import { toast } from 'react-toastify';
 
 const Register = ({ cartItemsCount }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  // Estado de Redux
+  const loading = useSelector(selectUserLoading);
+  const error = useSelector(selectUserError);
+  
+  // Estado local del formulario
   const [formData, setFormData] = useState({
     username: '',
     firstname: '',
@@ -16,10 +24,14 @@ const Register = ({ cartItemsCount }) => {
     confirmPassword: '',
     role: 'BUYER',
   });
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
+    // Limpiar error cuando el usuario empiece a escribir
+    if (error) {
+      dispatch(clearError());
+    }
+    
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -43,27 +55,26 @@ const Register = ({ cartItemsCount }) => {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const data = await authAPI.register({
+      // Preparar datos para el registro (sin confirmPassword)
+      const userData = {
         username: formData.username,
         firstname: formData.firstname,
         lastname: formData.lastname,
         email: formData.email,
         password: formData.password,
-              });
+        role: formData.role,
+      };
+
+      // Dispatch de la acción de Redux
+      await dispatch(registerUser(userData)).unwrap();
       
-      console.log('Respuesta del registro:', data);
-      
-      authAPI.saveAuth(data.access_token);
+      // Si llega aquí, el registro fue exitoso
       toast.success('Cuenta creada correctamente');
       navigate('/');
-    } catch (error) {
-      console.error('Error en el registro:', error);
-      toast.error(error.message || 'Error al registrarse');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      // Redux ya manejó el error, solo mostramos el toast
+      toast.error(err || 'Error al registrarse');
     }
   };
 

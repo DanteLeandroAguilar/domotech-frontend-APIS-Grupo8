@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { Dashboard } from '../../components/admin/Dashboard';
+import { selectUser, selectIsAuthenticated, selectUserRole } from '../../store/slices/userSlice';
 import { ordersAPI } from '../../api/endpoints/orders';
 import { productsAPI } from '../../api/endpoints/products';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  
+  // Estado de Redux
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userRole = useSelector(selectUserRole);
+  
+  // Estado local
   const [stats, setStats] = useState({
     totalSales: 0,
     pendingOrders: 0,
@@ -14,9 +25,25 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Verificar autenticación y rol
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    // Verificar si es SELLER
+    if (userRole !== 'SELLER') {
+      navigate('/');
+      return;
+    }
+  }, [isAuthenticated, userRole, navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated && userRole === 'SELLER') {
+      loadDashboardData();
+    }
+  }, [isAuthenticated, userRole]);
 
   const loadDashboardData = async () => {
     try {
@@ -56,14 +83,38 @@ const AdminDashboard = () => {
     return colors[status] || colors.PENDING;
   };
 
+  // Mostrar loading mientras verifica autenticación
+  if (!isAuthenticated || userRole !== 'SELLER') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">
+              Verificando acceso...
+            </p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-          Panel de Administración
-        </h2>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Panel de Administración
+          </h2>
+          {user && (
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Bienvenido, {user.username || user.email}
+            </p>
+          )}
+        </div>
 
         {/* Estadísticas */}
         <Dashboard stats={stats} />

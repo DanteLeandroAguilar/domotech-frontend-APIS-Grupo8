@@ -1,29 +1,40 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { authAPI } from '../../api/endpoints/auth';
-import { isSeller as authIsSeller, isBuyer as authIsBuyer } from '../../utils/auth';
+import { useSelector, useDispatch } from 'react-redux';
+import { 
+  logoutUser, 
+  selectUser, 
+  selectIsAuthenticated, 
+  selectUserRole,
+  loadUserFromToken 
+} from '../../store/slices/userSlice';
 
 export const Header = ({ cartItemsCount = 0 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+  
+  // Estado de Redux
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userRole = useSelector(selectUserRole);
+  
+  // Estado local
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showManagementMenu, setShowManagementMenu] = useState(false);
 
+  // Cargar usuario desde token al montar
   useEffect(() => {
-    loadAuthData();
-  }, []);
-
-  const loadAuthData = () => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
+    if (!isAuthenticated) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        dispatch(loadUserFromToken());
+      }
     }
-  };
+  }, [dispatch, isAuthenticated]);
 
-  const isSeller = () => authIsSeller();
-  const isBuyer = () => authIsBuyer();
+  const isSeller = () => userRole === 'SELLER';
+  const isBuyer = () => userRole === 'BUYER';
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -33,8 +44,7 @@ export const Header = ({ cartItemsCount = 0 }) => {
   };
 
   const handleLogout = () => {
-    authAPI.logout();
-    setIsAuthenticated(false);
+    dispatch(logoutUser());
     navigate('/');
   };
 
@@ -45,7 +55,7 @@ export const Header = ({ cartItemsCount = 0 }) => {
           {/* Logo y Navegación */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2 text-gray-900 dark:text-white">
-              <img src="../../../public/photo-domotech.png" className="w-10 h-10 rounded-full object-cover shadow-md"></img>
+              <img src="/photo-domotech.png" className="w-10 h-10 rounded-full object-cover shadow-md" alt="DomoTech" />
               <span className="text-xl font-bold" style={{ color: '#05AFF2' }}>DomoTech</span>
             </Link>
             
@@ -139,7 +149,7 @@ export const Header = ({ cartItemsCount = 0 }) => {
                 <Link
                   to="/profile"
                   aria-label="Perfil"
-                  title="Mi Perfil"
+                  title={user ? `Hola, ${user.username || user.email}` : "Mi Perfil"}
                   className="rounded-lg p-2 text-white hover:text-orange-500 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[24px]">person</span>

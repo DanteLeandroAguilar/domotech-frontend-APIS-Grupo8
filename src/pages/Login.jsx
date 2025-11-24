@@ -1,20 +1,32 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { authAPI } from '../api/endpoints/auth';
+import { loginUser, selectUserLoading, selectUserError, clearError } from '../store/slices/userSlice';
 import { toast } from 'react-toastify';
 
 const Login = ({ cartItemsCount }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  // Estado de Redux
+  const loading = useSelector(selectUserLoading);
+  const error = useSelector(selectUserError);
+  
+  // Estado local del formulario
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
+    // Limpiar error cuando el usuario empiece a escribir
+    if (error) {
+      dispatch(clearError());
+    }
+    
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -33,17 +45,16 @@ const Login = ({ cartItemsCount }) => {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const data = await authAPI.login(formData);
-      authAPI.saveAuth(data.access_token);
+      // Dispatch de la acción de Redux
+      const result = await dispatch(loginUser(formData)).unwrap();
+      
+      // Si llega aquí, el login fue exitoso
       toast.success('Sesión iniciada');
       navigate('/');
-    } catch (error) {
-      toast.error(error.message || 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      // Redux ya manejó el error, solo mostramos el toast
+      toast.error(err || 'Error al iniciar sesión');
     }
   };
 
