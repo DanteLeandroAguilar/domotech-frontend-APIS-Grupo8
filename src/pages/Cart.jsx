@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
 import { cartAPI } from '../api/endpoints/cart';
+import { selectCartItems, setCartItems } from '../redux/cartItemsSlice';
 
 const Cart = ({ cartItemsCount, updateCartCount }) => {
+  const dispatch = useDispatch();
+  const items = useSelector(selectCartItems);
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -13,11 +17,26 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
     loadCart();
   }, []);
 
+  // Actualizar cart cuando items de Redux cambien
+  useEffect(() => {
+    if (cart && items) {
+      setCart(prevCart => ({
+        ...prevCart,
+        items: items
+      }));
+      if (updateCartCount) {
+        updateCartCount();
+      }
+    }
+  }, [items]);
+
   const loadCart = async () => {
     try {
       setLoading(true);
       const data = await cartAPI.getMyCart();
       setCart(data);
+      // Sincronizar items con Redux
+      dispatch(setCartItems(data?.items || []));
       if (updateCartCount) {
         updateCartCount();
       }
@@ -29,6 +48,7 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
         total: 0,
         itemCount: 0
       });
+      dispatch(setCartItems([]));
     } finally {
       setLoading(false);
     }
@@ -38,8 +58,6 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
     if (!window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) return;
     try {
       setLoading(true);
-      const current = await cartAPI.getMyCart();
-      const items = current?.items || [];
       await Promise.all(items.map((it) => cartAPI.updateProductAmount(it.productId, 0)));
       await loadCart();
     } catch (error) {
@@ -65,7 +83,7 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
       <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {!cart || !cart.items || cart.items.length === 0 ? (
+        {!items || items.length === 0 ? (
           <div className="text-center py-12">
             <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600 mb-4">
               shopping_cart
@@ -92,7 +110,7 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
               </h1>
               
               <div className="space-y-4">
-                {cart.items.map((item) => (
+                {items.map((item) => (
                   <CartItem key={item.id || item.productId} item={item} onUpdate={loadCart} />
                 ))}
               </div>

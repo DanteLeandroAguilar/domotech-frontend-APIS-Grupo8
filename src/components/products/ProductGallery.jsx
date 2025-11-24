@@ -3,42 +3,42 @@ import { imagesAPI } from '../../api/endpoints/images';
 
 export const ProductGallery = ({ images = [] }) => {
   const [selectedImage, setSelectedImage] = useState(0);
-  const [blobUrls, setBlobUrls] = useState([]);
+  const [base64Images, setBase64Images] = useState([]);
 
-  // Cargar blobs de imágenes protegidas y crear Object URLs
+  // Cargar imágenes en base64
   useEffect(() => {
     if (!images || images.length === 0) return;
 
     let isCancelled = false;
-    let createdUrls = [];
 
-    const loadBlobs = async () => {
+    const loadImages = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const urls = await Promise.all(
-          images.map(async (image) => {
-            const url = imagesAPI.getImageUrl(image.imageId);
-            const response = await fetch(url, {
-              headers: token ? { Authorization: `Bearer ${token}` } : {},
-            });
-            const blob = await response.blob();
-            return URL.createObjectURL(blob);
-          })
-        );
-        createdUrls = urls;
+        const imagePromises = images.map(async (image) => {
+          try {
+            const base64 = await imagesAPI.getImageBase64(image.imageId);
+            return `data:image/jpeg;base64,${base64}`;
+          } catch (e) {
+            return 'https://via.placeholder.com/400x400?text=Error';
+          }
+        });
+        
+        const urls = await Promise.all(imagePromises);
+        
         if (!isCancelled) {
-          setBlobUrls(urls);
+          setBase64Images(urls);
         }
       } catch (e) {
-        // En caso de error, dejamos que se usen las URLs directas
+        // En caso de error, dejamos array vacío
+        if (!isCancelled) {
+          setBase64Images([]);
+        }
       }
     };
 
-    loadBlobs();
+    loadImages();
 
     return () => {
       isCancelled = true;
-      createdUrls.forEach((u) => URL.revokeObjectURL(u));
     };
   }, [images]);
 
@@ -50,8 +50,7 @@ export const ProductGallery = ({ images = [] }) => {
     );
   }
 
-  const mainImage = images[selectedImage];
-  const mainImageUrl = blobUrls[selectedImage] || imagesAPI.getImageUrl(mainImage.imageId);
+  const mainImageUrl = base64Images[selectedImage] || 'https://via.placeholder.com/400x400?text=Cargando';
 
   return (
     <div className="space-y-4">
@@ -78,7 +77,7 @@ export const ProductGallery = ({ images = [] }) => {
               }`}
             >
               <img
-                src={blobUrls[index] || imagesAPI.getImageUrl(image.imageId)}
+                src={base64Images[index] || 'https://via.placeholder.com/100x100?text=...'}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
               />

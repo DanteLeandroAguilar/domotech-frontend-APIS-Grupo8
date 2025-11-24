@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
-import { cartAPI } from '../../api/endpoints/cart';
+import { updateCartItemAmount, selectCartItemsLoading } from '../../redux/cartItemsSlice';
 
 export const CartItem = ({ item, onUpdate }) => {
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const loading = useSelector(selectCartItemsLoading);
 
   const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/100x100?text=Producto');
 
   useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
+    const loadImage = async () => {
       let imageId = item.product?.principalImage?.imageId;
       // Si el item del carrito no trae el objeto product, pedimos la imagen principal por productId
       if (!imageId && item.productId) {
@@ -26,61 +27,40 @@ export const CartItem = ({ item, onUpdate }) => {
         return;
       }
       try {
-        const token = localStorage.getItem('token');
-        const url = imagesAPI.getImageUrl(imageId);
-        const response = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
-        setImageUrl(createdUrl);
+        const base64 = await imagesAPI.getImageBase64(imageId);
+        setImageUrl(`data:image/jpeg;base64,${base64}`);
       } catch (e) {
-        // Fallback a URL directa si el blob falla
-        setImageUrl(imagesAPI.getImageUrl(imageId));
+        // Fallback a placeholder si falla
+        setImageUrl('https://via.placeholder.com/100x100?text=Producto');
       }
     };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
-  }, [item.product?.principalImage?.imageId]);
+    loadImage();
+  }, [item.product?.principalImage?.imageId, item.productId]);
 
   const handleIncrease = async () => {
-    setLoading(true);
-    try {
-      await cartAPI.updateProductAmount(item.productId, item.amount + 1);
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Error al actualizar cantidad:', error);
-    } finally {
-      setLoading(false);
-    }
+    await dispatch(updateCartItemAmount({ 
+      productId: item.productId, 
+      amount: item.amount + 1 
+    })).unwrap();
+    if (onUpdate) onUpdate();
   };
 
   const handleDecrease = async () => {
     if (item.amount > 1) {
-      setLoading(true);
-      try {
-        await cartAPI.updateProductAmount(item.productId, item.amount - 1);
-        if (onUpdate) onUpdate();
-      } catch (error) {
-        console.error('Error al actualizar cantidad:', error);
-      } finally {
-        setLoading(false);
-      }
+      await dispatch(updateCartItemAmount({ 
+        productId: item.productId, 
+        amount: item.amount - 1 
+      })).unwrap();
+      if (onUpdate) onUpdate();
     }
   };
 
   const handleRemove = async () => {
-    setLoading(true);
-    try {
-      await cartAPI.updateProductAmount(item.productId, 0);
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Error al eliminar producto:', error);
-    } finally {
-      setLoading(false);
-    }
+    await dispatch(updateCartItemAmount({ 
+      productId: item.productId, 
+      amount: 0 
+    })).unwrap();
+    if (onUpdate) onUpdate();
   };
 
   // Usar los valores que vienen del backend

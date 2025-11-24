@@ -29,20 +29,30 @@ export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5
     handleFiles(files);
   };
 
-  const handleFiles = (files) => {
+  const handleFiles = async (files) => {
     if (previewImages.length + files.length > maxImages) {
       alert(`Solo puedes subir un máximo de ${maxImages} imágenes`);
       return;
     }
 
-    const newImages = files.map((file, index) => ({
-      id: `new-${Date.now()}-${index}`,
-      file,
-      url: URL.createObjectURL(file),
-      isMain: previewImages.length === 0 && index === 0,
-      isNew: true,
-    }));
+    // Convertir archivos a base64 para preview
+    const imagePromises = files.map((file, index) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({
+            id: `new-${Date.now()}-${index}`,
+            file,
+            url: reader.result, // data:image/...;base64,...
+            isMain: previewImages.length === 0 && index === 0,
+            isNew: true,
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
 
+    const newImages = await Promise.all(imagePromises);
     const updatedImages = [...previewImages, ...newImages];
     setPreviewImages(updatedImages);
     onImagesChange(updatedImages);

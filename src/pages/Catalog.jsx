@@ -1,42 +1,75 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { ProductGrid } from '../components/products/ProductGrid';
 import { ProductFilters } from '../components/products/ProductFilters';
 import { Loading } from '../components/common/Loading';
-import { useProducts } from '../hooks/useProducts';
+import { 
+  filterProducts, 
+  setPagination,
+  setFilters as setReduxFilters,
+  clearFilters
+} from '../redux/productSlice';
 
 const Catalog = ({ cartItemsCount, updateCartCount }) => {
+  const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filters, setFilters] = useState({});
+  const [localFilters, setLocalFilters] = useState({});
   const searchTerm = searchParams.get('search');
+
+  // Selectores de Redux - Desestructuración directa del estado
+  const { products, loading, error, pagination } = useSelector((state) => state.products);
 
   useEffect(() => {
     if (searchTerm) {
       // Si hay término de búsqueda, aplicarlo como filtro
-      setFilters({ searchTerm });
+      const filters = { searchTerm };
+      setLocalFilters(filters);
+      dispatch(setReduxFilters(filters));
+      dispatch(filterProducts({ ...filters, page: 0, size: 12 }));
     } else {
-      // Si no hay búsqueda, limpiar filtros
-      setFilters({});
+      // Si no hay búsqueda, cargar todos los productos
+      setLocalFilters({});
+      dispatch(clearFilters());
+      dispatch(filterProducts({ page: 0, size: 12 }));
     }
-  }, [searchTerm]);
-
-  const { products, loading, error, pagination, nextPage, prevPage, resetPage } = useProducts(filters);
+  }, [searchTerm, dispatch]);
 
   const handleFilterChange = (newFilters) => {
     // Limpiar el parámetro de búsqueda de la URL cuando se usan filtros
     setSearchParams({});
-    setFilters(newFilters);
+    setLocalFilters(newFilters);
+    dispatch(setReduxFilters(newFilters));
     // Resetear a la primera página cuando cambian los filtros
-    resetPage();
+    dispatch(setPagination({ page: 0 }));
+    dispatch(filterProducts({ ...newFilters, page: 0, size: 12 }));
   };
 
   const handleClearSearch = () => {
     // Limpiar búsqueda y volver a mostrar todos los productos
     setSearchParams({});
-    setFilters({});
-    resetPage();
+    setLocalFilters({});
+    dispatch(clearFilters());
+    dispatch(setPagination({ page: 0 }));
+    dispatch(filterProducts({ page: 0, size: 12 }));
+  };
+
+  const nextPage = () => {
+    if (pagination.page < pagination.totalPages - 1) {
+      const newPage = pagination.page + 1;
+      dispatch(setPagination({ page: newPage }));
+      dispatch(filterProducts({ ...localFilters, page: newPage, size: 12 }));
+    }
+  };
+
+  const prevPage = () => {
+    if (pagination.page > 0) {
+      const newPage = pagination.page - 1;
+      dispatch(setPagination({ page: newPage }));
+      dispatch(filterProducts({ ...localFilters, page: newPage, size: 12 }));
+    }
   };
 
   return (

@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { isSeller as authIsSeller } from '../../utils/auth';
 import { cartAPI } from '../../api/endpoints/cart';
+import { updateCartItemAmount, selectCartItemsLoading } from '../../redux/cartItemsSlice';
 
 export const ProductCard = ({ product, updateCartCount }) => {
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const loading = useSelector(selectCartItemsLoading);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -25,28 +28,19 @@ export const ProductCard = ({ product, updateCartCount }) => {
       : 'https://via.placeholder.com/300x300?text=Sin+Imagen'
   );
 
-  // Si las imágenes requieren auth y vienen como blob, creamos un Object URL
+  // Cargar imagen en base64
   useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
+    const loadImage = async () => {
       if (!product?.principalImage?.imageId) return;
       try {
-        const token = localStorage.getItem('token');
-        const url = imagesAPI.getImageUrl(product.principalImage.imageId);
-        const response = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
-        setImageUrl(createdUrl);
+        const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
+        setImageUrl(`data:image/jpeg;base64,${base64}`);
       } catch (e) {
-        // fallback se mantiene a la URL directa
+        // fallback a placeholder si falla
+        setImageUrl('https://via.placeholder.com/300x300?text=Sin+Imagen');
       }
     };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
+    loadImage();
   }, [product?.principalImage?.imageId]);
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);
@@ -56,24 +50,24 @@ export const ProductCard = ({ product, updateCartCount }) => {
     e.preventDefault();
     if (!isAuthenticated || isSeller()) return;
 
-    setLoading(true);
     try {
       // Obtener cantidad actual en carrito para este producto y sumar 1
       const cart = await cartAPI.getMyCart();
       const existingItem = cart?.items?.find((it) => it.productId === product.productId);
       const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
-      const desired = currentAmount + 1;
-      const newAmount = desired;
+      const newAmount = currentAmount + 1;
 
-      await cartAPI.updateProductAmount(product.productId, newAmount);
+      await dispatch(updateCartItemAmount({ 
+        productId: product.productId, 
+        amount: newAmount 
+      })).unwrap();
+      
       if (updateCartCount) {
         updateCartCount();
       }
       console.log('Producto agregado al carrito');
     } catch (error) {
       console.error('Error al agregar al carrito:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

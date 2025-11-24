@@ -102,13 +102,8 @@ const Profile = ({ cartItemsCount }) => {
             const product = await productsAPI.getById(productId);
             
             if (product.principalImage?.imageId) {
-              const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
-              
-              const response = await fetch(imageUrl, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
-              });
-              const blob = await response.blob();
-              images[productId] = URL.createObjectURL(blob);
+              const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
+              images[productId] = `data:image/jpeg;base64,${base64}`;
             }
           } catch (error) {
             console.error(`Error al cargar imagen del producto ${productId}:`, error);
@@ -121,13 +116,6 @@ const Profile = ({ cartItemsCount }) => {
       console.error('Error al cargar imágenes de productos:', error);
     }
   };
-
-  // Limpiar Object URLs al desmontar el componente
-  useEffect(() => {
-    return () => {
-      Object.values(productImages).forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [productImages]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';

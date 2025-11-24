@@ -1,49 +1,50 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { ProductGallery } from '../components/products/ProductGallery';
 import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
-import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
 import { cartAPI } from '../api/endpoints/cart';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
 import { isSeller as authIsSeller, isAuthenticated as authIsAuthenticated } from '../utils/auth';
 import { toast } from 'react-toastify';
+import { 
+  fetchProductById, 
+  clearCurrentProduct 
+} from '../redux/productSlice';
+import { updateCartItemAmount, selectCartItemsLoading } from '../redux/cartItemsSlice';
 
 const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
-  const [product, setProduct] = useState(null);
+  // Selectores de Redux - Desestructuración directa del estado
+  const { currentProduct: product, loading } = useSelector((state) => state.products);
+  const addingToCart = useSelector(selectCartItemsLoading);
+  
   const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [addingToCart, setAddingToCart] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSeller, setIsSeller] = useState(false);
 
   useEffect(() => {
     loadAuthData();
-    loadProduct();
+    dispatch(fetchProductById(id));
     loadImages();
-  }, [id]);
+
+    // Limpiar el producto actual al desmontar
+    return () => {
+      dispatch(clearCurrentProduct());
+    };
+  }, [id, dispatch]);
 
   const loadAuthData = () => {
     setIsAuthenticated(authIsAuthenticated());
     setIsSeller(authIsSeller());
-  };
-
-  const loadProduct = async () => {
-    try {
-      const data = await productsAPI.getById(id);
-      setProduct(data);
-    } catch (error) {
-      console.error('Error al cargar producto:', error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const loadImages = async () => {
@@ -61,20 +62,22 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
       return;
     }
 
-    setAddingToCart(true);
     try {
       // Sumar a la cantidad existente en carrito en lugar de fijarla
       const currentCart = await cartAPI.getMyCart();
       const existingItem = currentCart?.items?.find((it) => it.productId === product.productId);
       const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
       const newAmount = currentAmount + quantity;
-      await cartAPI.updateProductAmount(product.productId, newAmount);
+      
+      await dispatch(updateCartItemAmount({ 
+        productId: product.productId, 
+        amount: newAmount 
+      })).unwrap();
+      
       updateCartCount();
       toast.success('Producto agregado al carrito');
     } catch (error) {
       toast.error(error.message || 'Error al agregar al carrito');
-    } finally {
-      setAddingToCart(false);
     }
   };
 

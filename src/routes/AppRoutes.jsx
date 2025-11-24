@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { PrivateRoute } from './PrivateRoute';
 
 // Pages
@@ -19,8 +19,7 @@ import CategoryManagement from '../pages/admin/CategoryManagement';
 
 export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
         {/* Rutas Públicas */}
         <Route path="/" element={<Home cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />} />
         <Route path="/catalog" element={<Catalog cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />} />
@@ -91,6 +90,5 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
         {/* Ruta por defecto */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
   );
 };

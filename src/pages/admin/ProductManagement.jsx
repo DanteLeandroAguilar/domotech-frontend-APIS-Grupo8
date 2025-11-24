@@ -1,35 +1,32 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { ProductForm } from '../../components/admin/ProductForm';
 import { ProductTable } from '../../components/admin/ProductTable';
 import { Loading } from '../../components/common/Loading';
-import { productsAPI } from '../../api/endpoints/products';
 import { imagesAPI } from '../../api/endpoints/images';
 import { toast } from 'react-toastify';
+import { 
+  fetchAllProducts,
+  createProduct,
+  updateProduct,
+  updateProductStock,
+  deleteProduct
+} from '../../redux/productSlice';
 
 const ProductManagement = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  
+  // Selectores de Redux - Desestructuración directa del estado
+  const { products, loading } = useSelector((state) => state.products);
+  
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const data = await productsAPI.getAll(0, 100);
-      // Las imágenes ya vienen en la respuesta del producto
-      setProducts(data.content || []);
-    } catch (error) {
-      console.error('Error al cargar productos:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchAllProducts({ page: 0, size: 100 }));
+  }, [dispatch]);
 
   const handleSubmit = async (formData) => {
     try {
@@ -38,18 +35,24 @@ const ProductManagement = () => {
 
       if (editingProduct) {
         // Actualizar producto existente
-        await productsAPI.update(editingProduct.productId, productData);
+        const result = dispatch(updateProduct({ 
+          id: editingProduct.productId, 
+          productData 
+        }));
         productId = editingProduct.productId;
         
         // Actualizar stock si cambió
         const stockChanged = Number(productData.stock) !== Number(editingProduct.stock);
         if (stockChanged) {
-          await productsAPI.updateStock(editingProduct.productId, { stock: Number(productData.stock) });
+          dispatch(updateProductStock({ 
+            id: editingProduct.productId, 
+            stockData: { stock: Number(productData.stock) }
+          }));
         }
       } else {
         // Crear nuevo producto
-        const response = await productsAPI.create(productData);
-        productId = response.productId;
+        const result = dispatch(createProduct(productData));
+        productId = result.payload.productId;
       }
 
       // Procesar imágenes
@@ -115,7 +118,7 @@ const ProductManagement = () => {
       toast.success(editingProduct ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
       setShowForm(false);
       setEditingProduct(null);
-      loadProducts();
+      dispatch(fetchAllProducts({ page: 0, size: 100 }));
     } catch (error) {
       console.error('Error al guardar producto:', error);
       toast.error(error.response?.data?.message || 'Error al guardar producto');
@@ -133,9 +136,9 @@ const ProductManagement = () => {
     }
 
     try {
-      await productsAPI.delete(productId);
+      await dispatch(deleteProduct(productId));
       toast.success('Producto eliminado correctamente');
-      loadProducts();
+      dispatch(fetchAllProducts({ page: 0, size: 100 }));
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al eliminar producto');
     }
