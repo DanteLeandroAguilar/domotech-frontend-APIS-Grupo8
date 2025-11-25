@@ -1,30 +1,20 @@
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { useEffect, useState } from 'react';
-import { productsAPI } from '../api/endpoints/products';
+import { useEffect } from 'react';
+import { fetchCatalog } from '../store/slices/productsSlice';
 import { ProductCard } from '../components/products/ProductCard';
 import { Loading } from '../components/common/Loading';
 
 const Home = () => {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { products: featuredProducts, loading } = useSelector((state) => state.products);
 
   useEffect(() => {
-    loadFeaturedProducts();
-  }, []);
-
-  const loadFeaturedProducts = async () => {
-    try {
-      const data = await productsAPI.getCatalog(0, 6);
-      setFeaturedProducts(data.content || []);
-    } catch (error) {
-      console.error('Error al cargar productos destacados:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchCatalog({ page: 0, size: 6 }));
+  }, [dispatch]);
 
   return (
     <div className="flex flex-col min-h-screen">

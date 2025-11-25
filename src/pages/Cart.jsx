@@ -1,18 +1,13 @@
-import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
-import { fetchCart, clearCart as clearCartAction } from '../store/slices/cartSlice';
+import { clearCart as clearCartAction } from '../store/slices/cartSlice';
 
 const Cart = () => {
   const dispatch = useDispatch();
-  const { cart, loading, error } = useSelector((state) => state.cart);
-
-  useEffect(() => {
-    dispatch(fetchCart());
-  }, [dispatch]);
+  const { cart, loading } = useSelector((state) => state.cart);
 
   const handleClearCart = async () => {
     if (!window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) return;

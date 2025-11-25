@@ -3,49 +3,27 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
-import { updateProductAmount, fetchCart } from '../../store/slices/cartSlice';
-import { getTokenFromStore } from '../../store';
+import { updateProductAmount } from '../../store/slices/cartSlice';
 
 export const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const { cart, updating } = useSelector((state) => state.cart);
   const { isAuthenticated, isSeller } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-    // Cargar carrito si está autenticado y no hay carrito
-    if (isAuthenticated && !cart) {
-      dispatch(fetchCart());
-    }
-  }, [isAuthenticated, cart, dispatch]);
+  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/300x300?text=Sin+Imagen');
 
-  const [imageUrl, setImageUrl] = useState(
-    product.principalImage 
-      ? imagesAPI.getImageUrl(product.principalImage.imageId)
-      : 'https://via.placeholder.com/300x300?text=Sin+Imagen'
-  );
-
-  // Si las imágenes requieren auth y vienen como blob, creamos un Object URL
+  // Cargar imagen en base64
   useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
+    const loadImage = async () => {
       if (!product?.principalImage?.imageId) return;
       try {
-        const token = getTokenFromStore();
-        const url = imagesAPI.getImageUrl(product.principalImage.imageId);
-        const response = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
-        setImageUrl(createdUrl);
+        const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
+        setImageUrl(`data:image/jpeg;base64,${base64}`);
       } catch (e) {
-        // fallback se mantiene a la URL directa
+        // fallback a placeholder
       }
     };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
+    loadImage();
   }, [product?.principalImage?.imageId]);
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);

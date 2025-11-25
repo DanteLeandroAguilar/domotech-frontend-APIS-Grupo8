@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
-import { productsAPI } from '../api/endpoints/products';
+import { fetchProductById } from '../store/slices/productsSlice';
 import { imagesAPI } from '../api/endpoints/images';
 import { toast } from 'react-toastify';
 
@@ -70,16 +70,11 @@ const Profile = () => {
       await Promise.all(
         Array.from(productIds).map(async (productId) => {
           try {
-            const product = await productsAPI.getById(productId);
+            const result = await dispatch(fetchProductById(productId)).unwrap();
             
-            if (product.principalImage?.imageId) {
-              const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
-              
-              const response = await fetch(imageUrl, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              const blob = await response.blob();
-              images[productId] = URL.createObjectURL(blob);
+            if (result.principalImage?.imageId) {
+              const base64 = await imagesAPI.getImageBase64(result.principalImage.imageId);
+              images[productId] = `data:image/jpeg;base64,${base64}`;
             }
           } catch (error) {
             console.error(`Error al cargar imagen del producto ${productId}:`, error);
@@ -93,7 +88,7 @@ const Profile = () => {
     } catch (error) {
       console.error('Error al cargar imágenes de productos:', error);
     }
-  }, [orders, token]);
+  }, [orders, token, dispatch]);
 
   // Cargar imágenes solo cuando cambia a la pestaña de órdenes y hay órdenes nuevas (solo para compradores)
   useEffect(() => {
@@ -114,19 +109,10 @@ const Profile = () => {
   useEffect(() => {
     if (activeTab === 'profile') {
       imagesLoadedRef.current = false;
-      // Limpiar Object URLs
-      Object.values(productImagesRef.current).forEach((url) => URL.revokeObjectURL(url));
       productImagesRef.current = {};
       setProductImages({});
     }
   }, [activeTab]);
-
-  // Limpiar Object URLs al desmontar el componente
-  useEffect(() => {
-    return () => {
-      Object.values(productImagesRef.current).forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';

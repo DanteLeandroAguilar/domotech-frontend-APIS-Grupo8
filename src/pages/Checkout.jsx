@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { fetchCart } from '../store/slices/cartSlice';
 import { confirmOrder } from '../store/slices/ordersSlice';
 import { formatPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
@@ -29,10 +28,6 @@ const Checkout = () => {
     // Datos de PayPal
     paypalEmail: '',
   });
-
-  useEffect(() => {
-    dispatch(fetchCart());
-  }, [dispatch]);
 
   const getCartTotal = () => {
     if (!cart || !cart.items) return 0;

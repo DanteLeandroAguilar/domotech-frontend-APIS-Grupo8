@@ -1,35 +1,32 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { ProductForm } from '../../components/admin/ProductForm';
 import { ProductTable } from '../../components/admin/ProductTable';
 import { Loading } from '../../components/common/Loading';
-import { productsAPI } from '../../api/endpoints/products';
 import { imagesAPI } from '../../api/endpoints/images';
 import { toast } from 'react-toastify';
+import { 
+  fetchAllProducts, 
+  createProduct, 
+  updateProduct, 
+  updateProductStock, 
+  deleteProduct 
+} from '../../store/slices/productsSlice';
 
 const ProductManagement = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { products, loading } = useSelector((state) => state.products);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const data = await productsAPI.getAll(0, 100);
-      // Las imágenes ya vienen en la respuesta del producto
-      setProducts(data.content || []);
-    } catch (error) {
-      console.error('Error al cargar productos:', error);
-    } finally {
-      setLoading(false);
+    // Solo cargar si no hay productos y no está cargando
+    if (products.length === 0 && !loading) {
+      dispatch(fetchAllProducts({ page: 0, size: 100 }));
     }
-  };
+  }, [dispatch, products.length, loading]);
 
   const handleSubmit = async (formData) => {
     try {
@@ -38,17 +35,23 @@ const ProductManagement = () => {
 
       if (editingProduct) {
         // Actualizar producto existente
-        await productsAPI.update(editingProduct.productId, productData);
+        await dispatch(updateProduct({ 
+          id: editingProduct.productId, 
+          productData 
+        })).unwrap();
         productId = editingProduct.productId;
         
         // Actualizar stock si cambió
         const stockChanged = Number(productData.stock) !== Number(editingProduct.stock);
         if (stockChanged) {
-          await productsAPI.updateStock(editingProduct.productId, { stock: Number(productData.stock) });
+          await dispatch(updateProductStock({ 
+            id: editingProduct.productId, 
+            stockData: { stock: Number(productData.stock) }
+          })).unwrap();
         }
       } else {
         // Crear nuevo producto
-        const response = await productsAPI.create(productData);
+        const response = await dispatch(createProduct(productData)).unwrap();
         productId = response.productId;
       }
 
@@ -115,10 +118,11 @@ const ProductManagement = () => {
       toast.success(editingProduct ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
       setShowForm(false);
       setEditingProduct(null);
-      loadProducts();
+      // Recargar productos
+      await dispatch(fetchAllProducts({ page: 0, size: 100 })).unwrap();
     } catch (error) {
       console.error('Error al guardar producto:', error);
-      toast.error(error.response?.data?.message || 'Error al guardar producto');
+      toast.error(error.message || 'Error al guardar producto');
     }
   };
 
@@ -128,16 +132,17 @@ const ProductManagement = () => {
   };
 
   const handleDelete = async (productId) => {
-    if (!window.confirm('¿Estás seguro de eliminar este producto?')) {
+    if (!window.confirm('¿Estás seguro de desactivar este producto?')) {
       return;
     }
 
     try {
-      await productsAPI.delete(productId);
-      toast.success('Producto eliminado correctamente');
-      loadProducts();
+      await dispatch(deleteProduct(productId)).unwrap();
+      toast.success('Producto desactivado correctamente');
+      // Recargar productos para obtener el estado actualizado
+      await dispatch(fetchAllProducts({ page: 0, size: 100 })).unwrap();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al eliminar producto');
+      toast.error(error.message || 'Error al desactivar producto');
     }
   };
 
