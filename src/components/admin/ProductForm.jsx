@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { categoriesAPI } from '../../api/endpoints/categories';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllCategories } from '../../store/slices/categoriesSlice';
 import { Button } from '../common/Button';
 import { ProductImageManager } from './ProductImageManager';
 
 export const ProductForm = ({ product, onSubmit, onCancel }) => {
-  const [categories, setCategories] = useState([]);
+  const dispatch = useDispatch();
+  const { categories } = useSelector((state) => state.categories);
   const [images, setImages] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -20,7 +22,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
   });
 
   useEffect(() => {
-    loadCategories();
+    dispatch(fetchAllCategories());
     if (product) {
       setFormData({
         name: product.name || '',
@@ -45,16 +47,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
         setImages(existingImages);
       }
     }
-  }, [product]);
-
-  const loadCategories = async () => {
-    try {
-      const data = await categoriesAPI.getAll();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error al cargar categorías:', error);
-    }
-  };
+  }, [product, dispatch]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

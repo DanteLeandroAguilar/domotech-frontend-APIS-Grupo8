@@ -1,51 +1,43 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { CategoryForm } from '../../components/admin/CategoryForm';
 import { CategoryTable } from '../../components/admin/CategoryTable';
 import { Loading } from '../../components/common/Loading';
-import { categoriesAPI } from '../../api/endpoints/categories';
+import { fetchAllCategories, createCategory, updateCategory, deleteCategory } from '../../store/slices/categoriesSlice';
 import { toast } from 'react-toastify';
 
 const CategoryManagement = () => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { categories, loading, error } = useSelector((state) => state.categories);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
 
   useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = async () => {
-    try {
-      setLoading(true);
-      const data = await categoriesAPI.getAll();
-      setCategories(data || []);
-    } catch (error) {
-      console.error('Error al cargar categorías:', error);
-      toast.error('Error al cargar categorías');
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchAllCategories());
+  }, [dispatch]);
 
   const handleSubmit = async (formData) => {
-    try {
-      if (editingCategory) {
-        await categoriesAPI.update(editingCategory.categoryId, formData);
+    let result;
+    if (editingCategory) {
+      result = await dispatch(updateCategory({ id: editingCategory.categoryId, categoryData: formData }));
+      if (updateCategory.fulfilled.match(result)) {
         toast.success('Categoría actualizada correctamente');
-      } else {
-        await categoriesAPI.create(formData);
-        toast.success('Categoría creada correctamente');
+        setShowForm(false);
+        setEditingCategory(null);
+      } else if (updateCategory.rejected.match(result)) {
+        toast.error(result.error?.message || 'Error al actualizar la categoría');
       }
-      
-      setShowForm(false);
-      setEditingCategory(null);
-      loadCategories();
-    } catch (error) {
-      console.error('Error al guardar categoría:', error);
-      toast.error(error.response?.data?.message || 'Error al guardar categoría');
+    } else {
+      result = await dispatch(createCategory(formData));
+      if (createCategory.fulfilled.match(result)) {
+        toast.success('Categoría creada correctamente');
+        setShowForm(false);
+        setEditingCategory(null);
+      } else if (createCategory.rejected.match(result)) {
+        toast.error(result.error?.message || 'Error al crear la categoría');
+      }
     }
   };
 
@@ -59,12 +51,11 @@ const CategoryManagement = () => {
       return;
     }
 
-    try {
-      await categoriesAPI.delete(categoryId);
+    const result = await dispatch(deleteCategory(categoryId));
+    if (deleteCategory.fulfilled.match(result)) {
       toast.success('Categoría eliminada correctamente');
-      loadCategories();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al eliminar categoría');
+    } else if (deleteCategory.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al eliminar la categoría');
     }
   };
 
