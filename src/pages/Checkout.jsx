@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { fetchCart } from '../store/slices/cartSlice';
+import { fetchCart, clearCart } from '../store/slices/cartSlice';
 import { confirmOrder } from '../store/slices/ordersSlice';
 import { formatPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
@@ -66,6 +66,8 @@ const Checkout = () => {
     
     const result = await dispatch(confirmOrder());
     if (confirmOrder.fulfilled.match(result)) {
+      // Vaciar el carrito después de confirmar la orden exitosamente
+      await dispatch(clearCart());
       toast.success('Orden confirmada');
       navigate('/order-summary');
     } else if (confirmOrder.rejected.match(result)) {
