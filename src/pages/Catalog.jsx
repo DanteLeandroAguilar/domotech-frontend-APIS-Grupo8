@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
@@ -6,56 +6,69 @@ import { Footer } from '../components/common/Footer';
 import { ProductGrid } from '../components/products/ProductGrid';
 import { ProductFilters } from '../components/products/ProductFilters';
 import { Loading } from '../components/common/Loading';
-import { fetchProducts, setFilters, resetPage, setPage } from '../store/slices/productsSlice';
+import { fetchProducts, resetPage, setPage } from '../store/slices/productsSlice';
 
 const Catalog = () => {
   const dispatch = useDispatch();
-  const { products, loading, error, pagination, filters } = useSelector((state) => state.products);
+  const { products, loading, error, pagination } = useSelector((state) => state.products);
   const [searchParams, setSearchParams] = useSearchParams();
   const searchTerm = searchParams.get('search');
 
+  // Fetch inicial solo en el primer render o cuando cambia searchTerm desde la URL (búsqueda desde Header)
   useEffect(() => {
-    if (searchTerm) {
-      // Si hay término de búsqueda, aplicarlo como filtro
-      dispatch(setFilters({ searchTerm }));
-    } else {
-      // Si no hay búsqueda, limpiar filtros
-      dispatch(setFilters({}));
-    }
-  }, [searchTerm, dispatch]);
-
-  useEffect(() => {
-    dispatch(fetchProducts({
-      ...filters,
-      page: pagination.page,
-      size: pagination.size,
-    }));
-  }, [dispatch, filters, pagination.page, pagination.size]);
+      const filters = searchTerm ? { searchTerm } : {};
+      dispatch(fetchProducts({
+        ...filters,
+        page: 0,
+        size: pagination.size,
+      }));
+      dispatch(resetPage());
+  }, [dispatch, searchTerm]);
 
   const handleFilterChange = (newFilters) => {
     // Limpiar el parámetro de búsqueda de la URL cuando se usan filtros
     setSearchParams({});
-    dispatch(setFilters(newFilters));
     // Resetear a la primera página cuando cambian los filtros
     dispatch(resetPage());
+    // Hacer fetch con los nuevos filtros
+    dispatch(fetchProducts({
+      ...newFilters,
+      page: 0,
+      size: pagination.size,
+    }));
   };
 
   const handleClearSearch = () => {
     // Limpiar búsqueda y volver a mostrar todos los productos
     setSearchParams({});
-    dispatch(setFilters({}));
     dispatch(resetPage());
   };
 
   const nextPage = () => {
     if (pagination.page < pagination.totalPages - 1) {
-      dispatch(setPage(pagination.page + 1));
+      const newPage = pagination.page + 1;
+      dispatch(setPage(newPage));
+      // Hacer fetch con la nueva página
+      const filters = searchTerm ? { searchTerm } : {};
+      dispatch(fetchProducts({
+        ...filters,
+        page: newPage,
+        size: pagination.size,
+      }));
     }
   };
 
   const prevPage = () => {
     if (pagination.page > 0) {
-      dispatch(setPage(pagination.page - 1));
+      const newPage = pagination.page - 1;
+      dispatch(setPage(newPage));
+      // Hacer fetch con la nueva página
+      const filters = searchTerm ? { searchTerm } : {};
+      dispatch(fetchProducts({
+        ...filters,
+        page: newPage,
+        size: pagination.size,
+      }));
     }
   };
 

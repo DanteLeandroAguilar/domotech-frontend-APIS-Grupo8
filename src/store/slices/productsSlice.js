@@ -13,7 +13,6 @@ const initialState = {
     totalPages: 0,
     totalElements: 0,
   },
-  filters: {},
 };
 
 // Thunk para obtener productos con filtros
@@ -137,9 +136,6 @@ const productsSlice = createSlice({
     },
     clearCurrentProduct: (state) => {
       state.currentProduct = null;
-    },
-    setFilters: (state, action) => {
-      state.filters = action.payload;
     },
     setPage: (state, action) => {
       state.pagination.page = action.payload;
@@ -418,6 +414,6 @@ const productsSlice = createSlice({
   },
 });
 
-export const { clearError, clearCurrentProduct, setFilters, setPage, resetPage } = productsSlice.actions;
+export const { clearError, clearCurrentProduct, setPage, resetPage } = productsSlice.actions;
 export default productsSlice.reducer;
 
