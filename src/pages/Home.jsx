@@ -7,7 +7,7 @@ import { productsAPI } from '../api/endpoints/products';
 import { ProductCard } from '../components/products/ProductCard';
 import { Loading } from '../components/common/Loading';
 
-const Home = () => {
+const Home = ({ cartItemsCount, updateCartCount }) => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,18 +28,18 @@ const Home = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="relative w-full h-[60vh] min-h-[480px] bg-cover bg-center flex items-center justify-center"
+        <section className="relative w-full h-[100vh] min-h-[480px] bg-cover bg-center flex items-center justify-center"
           style={{
             backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.7) 100%), url("https://images.unsplash.com/photo-1558002038-1055907df827?w=1920")'
           }}
         >
           <div className="text-center text-white max-w-3xl px-4">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tighter leading-tight">
-              Automatiza tu hogar con DomoTech
+              AUTOMATIZÁ TU HOGAR CON DOMOTECH
             </h1>
             <p className="mt-4 text-base md:text-lg text-gray-200">
               Descubre la última tecnología en domótica para hacer tu vida más fácil y eficiente.
@@ -53,27 +53,29 @@ const Home = () => {
         </section>
 
         {/* Featured Products */}
-        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-            Productos Destacados
-          </h2>
+        <section style={{ backgroundColor: '#9FADBF' }}>
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
+              Productos Destacados
+            </h2>
 
-          {loading ? (
-            <Loading message="Cargando productos..." />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredProducts.map(product => (
-                <ProductCard key={product.productId} product={product} />
-              ))}
+            {loading ? (
+              <Loading message="Cargando productos..." />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {featuredProducts.map(product => (
+                  <ProductCard key={product.productId} product={product} updateCartCount={updateCartCount} />
+                ))}
+              </div>
+            )}
+
+            <div className="text-center mt-12">
+              <Link to="/catalog">
+                <Button variant="outline" className="border-[#2A3340]">
+                  Ver todos los productos
+                </Button>
+              </Link>
             </div>
-          )}
-
-          <div className="text-center mt-12">
-            <Link to="/catalog">
-              <Button variant="outline">
-                Ver todos los productos
-              </Button>
-            </Link>
           </div>
         </section>
       </main>

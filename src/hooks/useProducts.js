@@ -21,17 +21,11 @@ export const useProducts = (filters = {}) => {
       setLoading(true);
       setError(null);
       
-      let data;
-      
-      if (filters.search) {
-        data = await productsAPI.search(filters.search, pagination.page, pagination.size);
-      } else if (filters.categoryId) {
-        data = await productsAPI.getByCategory(filters.categoryId, pagination.page, pagination.size);
-      } else if (Object.keys(filters).length > 0) {
-        data = await productsAPI.filter(filters, pagination.page, pagination.size);
-      } else {
-        data = await productsAPI.getCatalog(pagination.page, pagination.size);
-      }
+      const data = await productsAPI.filter({
+        ...filters,
+        page: pagination.page,
+        size: pagination.size,
+      });
 
       setProducts(data.content || []);
       setPagination(prev => ({
@@ -40,6 +34,7 @@ export const useProducts = (filters = {}) => {
         totalElements: data.totalElements || 0,
       }));
     } catch (err) {
+      console.error('Error al cargar productos:', err);
       setError(err.response?.data?.message || 'Error al cargar productos');
     } finally {
       setLoading(false);
@@ -64,6 +59,10 @@ export const useProducts = (filters = {}) => {
     }
   };
 
+  const resetPage = () => {
+    setPagination(prev => ({ ...prev, page: 0 }));
+  };
+
   return {
     products,
     loading,
@@ -72,6 +71,7 @@ export const useProducts = (filters = {}) => {
     nextPage,
     prevPage,
     goToPage,
+    resetPage,
     reload: loadProducts,
   };
 };

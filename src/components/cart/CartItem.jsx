@@ -1,37 +1,92 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
-import { useCart } from '../../hooks/useCart';
+import { cartAPI } from '../../api/endpoints/cart';
 
-export const CartItem = ({ item }) => {
-  const { updateProductAmount, removeFromCart } = useCart();
+export const CartItem = ({ item, onUpdate }) => {
   const [loading, setLoading] = useState(false);
 
-  const imageUrl = item.product?.principalImage
-    ? imagesAPI.getImageUrl(item.product.principalImage.imageId)
-    : 'https://via.placeholder.com/100x100?text=Producto';
+  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/100x100?text=Producto');
+
+  useEffect(() => {
+    let createdUrl;
+    const loadBlob = async () => {
+      let imageId = item.product?.principalImage?.imageId;
+      // Si el item del carrito no trae el objeto product, pedimos la imagen principal por productId
+      if (!imageId && item.productId) {
+        try {
+          const principal = await imagesAPI.getPrincipal(item.productId);
+          imageId = principal?.imageId;
+        } catch (e) {
+          imageId = null;
+        }
+      }
+      if (!imageId) {
+        setImageUrl('https://via.placeholder.com/100x100?text=Producto');
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        const url = imagesAPI.getImageUrl(imageId);
+        const response = await fetch(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const blob = await response.blob();
+        createdUrl = URL.createObjectURL(blob);
+        setImageUrl(createdUrl);
+      } catch (e) {
+        // Fallback a URL directa si el blob falla
+        setImageUrl(imagesAPI.getImageUrl(imageId));
+      }
+    };
+    loadBlob();
+    return () => {
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [item.product?.principalImage?.imageId]);
 
   const handleIncrease = async () => {
     setLoading(true);
-    await updateProductAmount(item.productId, item.amount + 1);
-    setLoading(false);
+    try {
+      await cartAPI.updateProductAmount(item.productId, item.amount + 1);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error al actualizar cantidad:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDecrease = async () => {
     if (item.amount > 1) {
       setLoading(true);
-      await updateProductAmount(item.productId, item.amount - 1);
-      setLoading(false);
+      try {
+        await cartAPI.updateProductAmount(item.productId, item.amount - 1);
+        if (onUpdate) onUpdate();
+      } catch (error) {
+        console.error('Error al actualizar cantidad:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const handleRemove = async () => {
     setLoading(true);
-    await removeFromCart(item.productId);
-    setLoading(false);
+    try {
+      await cartAPI.updateProductAmount(item.productId, 0);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error al eliminar producto:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const subtotal = item.price * item.amount;
+  // Usar los valores que vienen del backend
+  const discount = item.discount || 0;
+  const unitFinalPrice = item.price * (1 - discount / 100);
+  const subtotal = item.finalPrice || (unitFinalPrice * item.amount);
 
   return (
     <div className="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800">
@@ -47,9 +102,25 @@ export const CartItem = ({ item }) => {
         <h3 className="font-bold text-gray-900 dark:text-white">
           {item.productName}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {formatPrice(item.price)}
-        </p>
+        <div className="flex items-center gap-2">
+          {discount > 0 ? (
+            <>
+              <p className="text-sm text-gray-400 dark:text-gray-500 line-through">
+                {formatPrice(item.price)}
+              </p>
+              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                {formatPrice(unitFinalPrice)}
+              </p>
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded">
+                {discount}% OFF
+              </span>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {formatPrice(item.price)}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Controles de cantidad */}

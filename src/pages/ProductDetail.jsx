@@ -7,26 +7,33 @@ import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
-import { useAuth } from '../hooks/useAuth';
-import { useCart } from '../hooks/useCart';
-import { formatPrice, calculateDiscountPercentage } from '../utils/formatters';
+import { cartAPI } from '../api/endpoints/cart';
+import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
+import { isSeller as authIsSeller, isAuthenticated as authIsAuthenticated } from '../utils/auth';
+import { toast } from 'react-toastify';
 
-const ProductDetail = () => {
+const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, isSeller } = useAuth();
-  const { addToCart } = useCart();
   
   const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSeller, setIsSeller] = useState(false);
 
   useEffect(() => {
+    loadAuthData();
     loadProduct();
     loadImages();
   }, [id]);
+
+  const loadAuthData = () => {
+    setIsAuthenticated(authIsAuthenticated());
+    setIsSeller(authIsSeller());
+  };
 
   const loadProduct = async () => {
     try {
@@ -55,20 +62,26 @@ const ProductDetail = () => {
     }
 
     setAddingToCart(true);
-    const result = await addToCart(product.productId, quantity);
-    setAddingToCart(false);
-
-    if (result.success) {
-      alert('Producto agregado al carrito');
-    } else {
-      alert(result.error || 'Error al agregar al carrito');
+    try {
+      // Sumar a la cantidad existente en carrito en lugar de fijarla
+      const currentCart = await cartAPI.getMyCart();
+      const existingItem = currentCart?.items?.find((it) => it.productId === product.productId);
+      const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
+      const newAmount = currentAmount + quantity;
+      await cartAPI.updateProductAmount(product.productId, newAmount);
+      updateCartCount();
+      toast.success('Producto agregado al carrito');
+    } catch (error) {
+      toast.error(error.message || 'Error al agregar al carrito');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header />
+        <Header cartItemsCount={cartItemsCount} />
         <main className="flex-grow">
           <Loading message="Cargando producto..." />
         </main>
@@ -80,7 +93,7 @@ const ProductDetail = () => {
   if (!product) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header />
+        <Header cartItemsCount={cartItemsCount} />
         <main className="flex-grow container mx-auto px-4 py-12 text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             Producto no encontrado
@@ -92,20 +105,20 @@ const ProductDetail = () => {
   }
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);
-  const finalPrice = product.price - product.discount;
+  const finalPrice = calculateDiscountedPrice(product.price, product.discount);
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Header cartItemsCount={cartItemsCount} />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Galería de imágenes */}
+          
           <div>
             <ProductGallery images={images} />
           </div>
 
-          {/* Información del producto */}
+          
           <div>
             <div className="flex items-center text-sm mb-4">
               <span className="text-gray-500 dark:text-gray-400">
@@ -129,10 +142,10 @@ const ProductDetail = () => {
               </span>
               {discountPercentage > 0 && (
                 <>
-                  <span className="text-xl font-medium text-gray-400 line-through">
+                  <span className="text-xl font-medium text-gray-600 line-through">
                     {formatPrice(product.price)}
                   </span>
-                  <span className="text-sm font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
+                  <span className="text-sm font-bold bg-green-500/30 px-2 py-1 rounded-full" style={{color:'#00FF7F'}}>
                     {discountPercentage}% OFF
                   </span>
                 </>
@@ -140,11 +153,11 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex items-center gap-2 mb-6">
-              {product.stock > 0 ? (
+              {product.available ? (
                 <>
-                  <span className="material-symbols-outlined text-green-500">check_circle</span>
-                  <p className="text-green-500 font-semibold">
-                    En Stock ({product.stock} disponibles)
+                  <span className="material-symbols-outlined" style={{color:'#03A63C'}}>check_circle</span>
+                  <p className="font-semibold" style={{color:'#03A63C'}}>
+                    Disponible
                   </p>
                 </>
               ) : (
@@ -159,7 +172,7 @@ const ProductDetail = () => {
               {product.description}
             </p>
 
-            {isAuthenticated && !isSeller() && product.stock > 0 && (
+            {isAuthenticated && !isSeller && product.stock > 0 && (
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">Cantidad</label>
                 <div className="flex items-center gap-4">
@@ -180,7 +193,7 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {isAuthenticated && !isSeller() && product.stock > 0 && (
+            {isAuthenticated && !isSeller && product.available && (
               <Button
                 fullWidth
                 onClick={handleAddToCart}
