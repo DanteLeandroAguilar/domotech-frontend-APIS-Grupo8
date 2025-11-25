@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
 import { cartAPI } from '../api/endpoints/cart';
-import { ordersAPI } from '../api/endpoints/orders';
+import { confirmOrder } from '../store/slices/ordersSlice';
 import { formatPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { confirming, confirmError } = useSelector((state) => state.orders);
   const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     address: '',
@@ -71,17 +73,19 @@ const Checkout = () => {
       return;
     }
     
-    setLoading(true);
-    try {
-      await ordersAPI.confirm();
+    const result = await dispatch(confirmOrder());
+    if (confirmOrder.fulfilled.match(result)) {
       toast.success('Orden confirmada');
       navigate('/order-summary');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al procesar la orden');
-    } finally {
-      setLoading(false);
     }
   };
+
+  // Mostrar error si hay uno
+  useEffect(() => {
+    if (confirmError) {
+      toast.error(confirmError);
+    }
+  }, [confirmError]);
 
   const total = getCartTotal();
   const subtotal = getCartSubtotal();
@@ -416,10 +420,10 @@ const Checkout = () => {
                   <Button
                     type="submit"
                     fullWidth
-                    disabled={loading}
+                    disabled={confirming}
                     className="mt-6"
                   >
-                    {loading ? 'Procesando...' : 'Confirmar Compra'}
+                    {confirming ? 'Procesando...' : 'Confirmar Compra'}
                   </Button>
 
                   <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-700/50 py-3 rounded-lg">

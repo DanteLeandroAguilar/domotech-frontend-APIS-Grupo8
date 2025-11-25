@@ -1,40 +1,46 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { ordersAPI } from '../api/endpoints/orders';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { Loading } from '../components/common/Loading';
 
 const OrderSummary = () => {
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { currentOrder, confirming, error } = useSelector((state) => state.orders);
 
-  useEffect(() => {
-    loadLatestOrder();
-  }, []);
-
-  const loadLatestOrder = async () => {
-    try {
-      const data = await ordersAPI.getMyOrders();
-      if (data && data.length > 0) {
-        // Obtener la orden más reciente
-        setOrder(data[data.length - 1]);
-      }
-    } catch (error) {
-      console.error('Error al cargar orden:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  // Mostrar loading solo si se está confirmando la orden
+  if (confirming) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-grow">
-          <Loading message="Cargando confirmación..." />
+          <Loading message="Procesando orden..." />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Si no hay orden actual, mostrar mensaje
+  if (!currentOrder) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+              No se encontró la orden
+            </h2>
+            <p className="mt-4 text-base text-gray-600 dark:text-gray-400">
+              No hay una orden disponible para mostrar.
+            </p>
+            <div className="mt-8">
+              <Link to="/catalog" className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-primary/90">
+                Volver al catálogo
+              </Link>
+            </div>
+          </div>
         </main>
         <Footer />
       </div>
@@ -72,7 +78,7 @@ const OrderSummary = () => {
           </div>
 
           {/* Resumen del pedido */}
-          {order && (
+          {currentOrder && (
             <div className="mt-10 bg-white dark:bg-background-dark/50 border border-gray-200 dark:border-white/10 rounded-lg shadow-sm">
               <h3 className="text-lg font-bold p-4 sm:p-6 border-b border-gray-200 dark:border-white/10 text-gray-900 dark:text-white">
                 Resumen del pedido
@@ -80,7 +86,7 @@ const OrderSummary = () => {
               
               {/* Lista de productos */}
               <div className="p-4 sm:p-6 space-y-4">
-                {order.details?.map((detail, index) => (
+                {currentOrder.details?.map((detail, index) => (
                   <div key={detail.id || index} className="flex items-center gap-4">
                     <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                       <span className="material-symbols-outlined text-gray-400">
@@ -107,7 +113,7 @@ const OrderSummary = () => {
                 <div className="flex justify-between text-sm">
                   <p className="text-gray-600 dark:text-gray-400">Subtotal</p>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {formatPrice(order.total)}
+                    {formatPrice(currentOrder.total)}
                   </p>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -117,7 +123,7 @@ const OrderSummary = () => {
                 <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-white/10 mt-2">
                   <p className="text-gray-900 dark:text-white">Total</p>
                   <p className="text-gray-900 dark:text-white">
-                    {formatPrice(order.total)}
+                    {formatPrice(currentOrder.total)}
                   </p>
                 </div>
               </div>
@@ -125,26 +131,33 @@ const OrderSummary = () => {
           )}
 
           {/* Información de la orden */}
-          {order && (
+          {currentOrder && (
             <div className="mt-6 bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-white/10 rounded-lg p-4 sm:p-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500 dark:text-gray-400 mb-1">Número de orden</p>
-                  <p className="font-medium text-gray-900 dark:text-white">#{order.orderId}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">#{currentOrder.orderId}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-gray-400 mb-1">Fecha</p>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {formatDate(order.orderDate)}
+                    {formatDate(currentOrder.orderDate)}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-gray-400 mb-1">Estado</p>
                   <p className="font-medium text-green-600 dark:text-green-400">
-                    {order.orderStatus}
+                    {currentOrder.orderStatus}
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Mostrar error si hay uno */}
+          {error && (
+            <div className="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-red-600 dark:text-red-400">Error: {error}</p>
             </div>
           )}
 

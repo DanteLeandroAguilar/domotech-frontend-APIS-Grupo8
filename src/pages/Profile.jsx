@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { authAPI } from '../api/endpoints/auth';
-import { ordersAPI } from '../api/endpoints/orders';
+import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
 
 const Profile = ({ cartItemsCount }) => {
+  const dispatch = useDispatch();
+  const { orders, loading: loadingOrders, error: ordersError } = useSelector((state) => state.orders);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,9 +23,6 @@ const Profile = ({ cartItemsCount }) => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' o 'orders'
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [ordersError, setOrdersError] = useState(null);
   const [productImages, setProductImages] = useState({});
 
   useEffect(() => {
@@ -57,9 +57,9 @@ const Profile = ({ cartItemsCount }) => {
 
   useEffect(() => {
     if (activeTab === 'orders' && isAuthenticated && orders.length === 0) {
-      fetchOrders();
+      dispatch(fetchMyOrders());
     }
-  }, [activeTab, isAuthenticated]);
+  }, [activeTab, isAuthenticated, dispatch, orders.length]);
 
   // Cargar imágenes cuando cambian las órdenes
   useEffect(() => {
@@ -68,19 +68,6 @@ const Profile = ({ cartItemsCount }) => {
     }
   }, [orders]);
 
-  const fetchOrders = async () => {
-    setLoadingOrders(true);
-    setOrdersError(null);
-    try {
-      const ordersData = await ordersAPI.getMyOrders();
-      setOrders(ordersData);
-    } catch (err) {
-      console.error('Error al obtener pedidos:', err);
-      setOrdersError(err.message);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
 
   const loadOrderProductImages = async () => {
     try {
