@@ -3,14 +3,13 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
-import { isSeller as authIsSeller } from '../../utils/auth';
 import { updateProductAmount, fetchCart } from '../../store/slices/cartSlice';
 import { getTokenFromStore } from '../../store';
 
 export const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const { cart, updating } = useSelector((state) => state.cart);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, isSeller } = useSelector((state) => state.auth);
 
   useEffect(() => {
     // Cargar carrito si está autenticado y no hay carrito
@@ -18,14 +17,6 @@ export const ProductCard = ({ product }) => {
       dispatch(fetchCart());
     }
   }, [isAuthenticated, cart, dispatch]);
-
-  const { isAuthenticated: authIsAuthenticated } = useSelector((state) => state.auth);
-
-  useEffect(() => {
-    setIsAuthenticated(authIsAuthenticated);
-  }, [authIsAuthenticated]);
-
-  const isSeller = () => authIsSeller();
 
   const [imageUrl, setImageUrl] = useState(
     product.principalImage 
@@ -62,7 +53,7 @@ export const ProductCard = ({ product }) => {
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated || isSeller()) return;
+    if (!isAuthenticated || isSeller) return;
 
     // Obtener cantidad actual en carrito para este producto y sumar 1
     const existingItem = cart?.items?.find((it) => it.productId === product.productId);
@@ -119,7 +110,7 @@ export const ProductCard = ({ product }) => {
             {product.available ? '' : 'Sin Stock'}
           </span>
 
-          {isAuthenticated && !isSeller() && product.active && product.available && (
+          {isAuthenticated && !isSeller && product.active && product.available && (
             <button
               onClick={handleAddToCart}
               disabled={updating || !product.available}

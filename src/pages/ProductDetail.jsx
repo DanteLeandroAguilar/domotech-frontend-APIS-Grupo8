@@ -10,7 +10,6 @@ import { fetchProductById } from '../store/slices/productsSlice';
 import { updateProductAmount, fetchCart } from '../store/slices/cartSlice';
 import { imagesAPI } from '../api/endpoints/images';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
-import { isSeller as authIsSeller, isAuthenticated as authIsAuthenticated } from '../utils/auth';
 import { toast } from 'react-toastify';
 
 const ProductDetail = () => {
@@ -19,22 +18,15 @@ const ProductDetail = () => {
   const dispatch = useDispatch();
   const { currentProduct, loading } = useSelector((state) => state.products);
   const { cart, updating } = useSelector((state) => state.cart);
+  const { isAuthenticated, isSeller } = useSelector((state) => state.auth);
   
   const [images, setImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSeller, setIsSeller] = useState(false);
 
   useEffect(() => {
-    loadAuthData();
     dispatch(fetchProductById(id));
     loadImages();
   }, [id, dispatch]);
-
-  const loadAuthData = () => {
-    setIsAuthenticated(authIsAuthenticated());
-    setIsSeller(authIsSeller());
-  };
 
   const loadImages = async () => {
     try {

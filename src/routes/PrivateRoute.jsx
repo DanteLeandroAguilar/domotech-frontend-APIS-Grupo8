@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 export const PrivateRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, isSeller, isBuyer } = useSelector((state) => state.auth);
 
   if (loading) {
     return (
@@ -19,10 +19,13 @@ export const PrivateRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // TODO: Verificar el rol desde el token JWT decodificado
-  // if (requiredRole && userRole !== requiredRole) {
-  //   return <Navigate to="/" replace />;
-  // }
+  // Verificar el rol si se requiere
+  if (requiredRole === 'SELLER' && !isSeller) {
+    return <Navigate to="/" replace />;
+  }
+  if (requiredRole === 'BUYER' && !isBuyer) {
+    return <Navigate to="/" replace />;
+  }
 
   return children;
 };

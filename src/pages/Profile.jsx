@@ -5,13 +5,12 @@ import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
-import { isBuyer } from '../utils/auth';
 import { toast } from 'react-toastify';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { orders, loading: loadingOrders, error: ordersError } = useSelector((state) => state.orders);
-  const { user: userInfo, loading, error, isAuthenticated, token } = useSelector((state) => state.auth);
+  const { user: userInfo, loading, error, isAuthenticated, token, isBuyer } = useSelector((state) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -28,10 +27,10 @@ const Profile = () => {
 
   // Asegurar que los vendedores no puedan acceder al tab de pedidos
   useEffect(() => {
-    if (!isBuyer() && activeTab === 'orders') {
+    if (!isBuyer && activeTab === 'orders') {
       setActiveTab('profile');
     }
-  }, [activeTab]);
+  }, [activeTab, isBuyer]);
 
   // Inicializar formData solo cuando se carga el usuario por primera vez y no está editando
   useEffect(() => {
@@ -47,10 +46,10 @@ const Profile = () => {
 
   // Cargar órdenes solo cuando se cambia a la pestaña de órdenes (solo para compradores)
   useEffect(() => {
-    if (isBuyer() && activeTab === 'orders' && userInfo && orders.length === 0 && !loadingOrders) {
+    if (isBuyer && activeTab === 'orders' && userInfo && orders.length === 0 && !loadingOrders) {
       dispatch(fetchMyOrders());
     }
-  }, [activeTab, userInfo, dispatch, orders.length, loadingOrders]);
+  }, [activeTab, userInfo, dispatch, orders.length, loadingOrders, isBuyer]);
 
   // Función para cargar imágenes de productos
   const loadOrderProductImages = useCallback(async () => {
@@ -98,7 +97,7 @@ const Profile = () => {
 
   // Cargar imágenes solo cuando cambia a la pestaña de órdenes y hay órdenes nuevas (solo para compradores)
   useEffect(() => {
-    if (isBuyer() && activeTab === 'orders' && orders.length > 0) {
+    if (isBuyer && activeTab === 'orders' && orders.length > 0) {
       // Si cambió el número de órdenes, resetear el flag y cargar imágenes
       if (orders.length !== ordersLengthRef.current) {
         imagesLoadedRef.current = false;
@@ -109,7 +108,7 @@ const Profile = () => {
         loadOrderProductImages();
       }
     }
-  }, [activeTab, orders.length, token, loadOrderProductImages]);
+  }, [activeTab, orders.length, token, loadOrderProductImages, isBuyer]);
 
   // Limpiar imágenes cuando se cambia a la pestaña de perfil
   useEffect(() => {
@@ -256,7 +255,7 @@ const Profile = () => {
               >
                 Perfil
               </button>
-              {isBuyer() && (
+              {isBuyer && (
                 <button
                   onClick={() => setActiveTab('orders')}
                   className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
@@ -418,7 +417,7 @@ const Profile = () => {
           )}
 
           {/* Orders Tab Content */}
-          {activeTab === 'orders' && isBuyer() && (
+          {activeTab === 'orders' && isBuyer && (
             <div className="space-y-4">
               {loadingOrders ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700 text-center">

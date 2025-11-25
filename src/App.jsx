@@ -5,11 +5,10 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { fetchCart } from './store/slices/cartSlice';
 import { getLoggedUser } from './store/slices/authSlice';
-import { isBuyer } from './utils/auth';
 
 function App() {
   const dispatch = useDispatch();
-  const { isAuthenticated, token, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, token, user, isBuyer } = useSelector((state) => state.auth);
 
   useEffect(() => {
     // Cargar información del usuario si hay token pero no hay usuario
@@ -19,10 +18,10 @@ function App() {
   }, [dispatch, token, user]);
 
   useEffect(() => {
-    if (isAuthenticated && isBuyer()) {
+    if (isAuthenticated && isBuyer) {
       dispatch(fetchCart());
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, isBuyer]);
 
   return (
     <>

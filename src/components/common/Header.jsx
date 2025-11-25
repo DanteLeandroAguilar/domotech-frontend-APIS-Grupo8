@@ -1,20 +1,16 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
-import { isSeller as authIsSeller, isBuyer as authIsBuyer } from '../../utils/auth';
 
 export const Header = () => {
   const dispatch = useDispatch();
   const { itemCount } = useSelector((state) => state.cart);
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, isSeller, isBuyer } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [showManagementMenu, setShowManagementMenu] = useState(false);
-
-  const isSeller = () => authIsSeller();
-  const isBuyer = () => authIsBuyer();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -46,7 +42,7 @@ export const Header = () => {
               <Link to="/catalog" className="text-sm font-medium text-white dark:text-gray-300 hover:text-[#05AFF2] transition-colors">
                 Productos
               </Link>
-              {isSeller() && (
+              {isSeller && (
                 <>
                   <Link to="/admin" className="text-sm font-medium text-white dark:text-gray-300 hover:text-[#05AFF2] transition-colors">
                     Dashboard
@@ -112,7 +108,7 @@ export const Header = () => {
             )}
 
             {/* Carrito (solo para compradores autenticados) */}
-            {isAuthenticated && isBuyer() && (
+            {isAuthenticated && isBuyer && (
               <Link to="/cart" className="relative rounded-lg p-2 text-white dark:text-gray-300 hover:text-yellow-500 transition-colors">
                 <span className="material-symbols-outlined">shopping_cart</span>
                 {itemCount > 0 && (

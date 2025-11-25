@@ -1,11 +1,53 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authAPI } from '../../api/endpoints/auth';
 
+// Funciones helper para decodificar JWT
+const decodeJwt = (token) => {
+  try {
+    if (!token) return null;
+    const base64 = token.split('.')[1];
+    if (!base64) return null;
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+};
+
+const getRolesFromPayload = (payload) => {
+  if (!payload) return [];
+  const authorities = Array.isArray(payload.authorities)
+    ? payload.authorities.map((a) => (typeof a === 'string' ? a : a.authority)).filter(Boolean)
+    : [];
+  const roles = Array.isArray(payload.roles) ? payload.roles : [];
+  const roleSingle = payload.role ? [payload.role] : [];
+  return [...authorities, ...roles, ...roleSingle];
+};
+
+const getJwtPayload = (token) => {
+  return decodeJwt(token);
+};
+
+const isSeller = (token) => {
+  const payload = decodeJwt(token);
+  const all = getRolesFromPayload(payload);
+  return all.includes('SELLER');
+};
+
+const isBuyer = (token) => {
+  const payload = decodeJwt(token);
+  const all = getRolesFromPayload(payload);
+  return all.includes('BUYER');
+};
+
 // Estado inicial
+const token = localStorage.getItem('token') || null;
 const initialState = {
   user: null,
-  token: localStorage.getItem('token') || null,
-  isAuthenticated: !!localStorage.getItem('token'),
+  token: token,
+  isAuthenticated: !!token,
+  isSeller: isSeller(token),
+  isBuyer: isBuyer(token),
+  jwtPayload: getJwtPayload(token),
   loading: false,
   error: null,
   loginError: null,
@@ -81,6 +123,9 @@ const authSlice = createSlice({
         state.loginError = null;
         state.token = action.payload.access_token;
         state.isAuthenticated = true;
+        state.isSeller = isSeller(action.payload.access_token);
+        state.isBuyer = isBuyer(action.payload.access_token);
+        state.jwtPayload = getJwtPayload(action.payload.access_token);
         // Sincronizar con localStorage
         localStorage.setItem('token', action.payload.access_token);
       })
@@ -90,6 +135,9 @@ const authSlice = createSlice({
         state.loginError = error?.message || 'Error al iniciar sesión';
         state.isAuthenticated = false;
         state.token = null;
+        state.isSeller = false;
+        state.isBuyer = false;
+        state.jwtPayload = null;
       });
 
     // Register
@@ -103,6 +151,9 @@ const authSlice = createSlice({
         state.registerError = null;
         state.token = action.payload.access_token;
         state.isAuthenticated = true;
+        state.isSeller = isSeller(action.payload.access_token);
+        state.isBuyer = isBuyer(action.payload.access_token);
+        state.jwtPayload = getJwtPayload(action.payload.access_token);
         // Sincronizar con localStorage
         localStorage.setItem('token', action.payload.access_token);
       })
@@ -112,6 +163,9 @@ const authSlice = createSlice({
         state.registerError = error?.message || 'Error al registrarse';
         state.isAuthenticated = false;
         state.token = null;
+        state.isSeller = false;
+        state.isBuyer = false;
+        state.jwtPayload = null;
       });
 
     // Obtener usuario autenticado
@@ -124,6 +178,12 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = null;
         state.user = action.payload;
+        // Actualizar roles basados en el token actual
+        if (state.token) {
+          state.isSeller = isSeller(state.token);
+          state.isBuyer = isBuyer(state.token);
+          state.jwtPayload = getJwtPayload(state.token);
+        }
       })
       .addCase(getLoggedUser.rejected, (state, action) => {
         state.loading = false;
@@ -159,6 +219,9 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        state.isSeller = false;
+        state.isBuyer = false;
+        state.jwtPayload = null;
         state.error = null;
         // Limpiar localStorage
         localStorage.removeItem('token');
@@ -169,6 +232,9 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        state.isSeller = false;
+        state.isBuyer = false;
+        state.jwtPayload = null;
       });
   },
 });
