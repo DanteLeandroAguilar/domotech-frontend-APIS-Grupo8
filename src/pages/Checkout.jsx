@@ -12,7 +12,7 @@ import { toast } from 'react-toastify';
 const Checkout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { confirming, confirmError } = useSelector((state) => state.orders);
+  const { confirming } = useSelector((state) => state.orders);
   const { cart } = useSelector((state) => state.cart);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -68,15 +68,10 @@ const Checkout = () => {
     if (confirmOrder.fulfilled.match(result)) {
       toast.success('Orden confirmada');
       navigate('/order-summary');
+    } else if (confirmOrder.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al confirmar la orden');
     }
   };
-
-  // Mostrar error si hay uno
-  useEffect(() => {
-    if (confirmError) {
-      toast.error(confirmError);
-    }
-  }, [confirmError]);
 
   const total = getCartTotal();
   const subtotal = getCartSubtotal();

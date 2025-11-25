@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { authAPI } from '../api/endpoints/auth';
+import { login } from '../store/slices/authSlice';
 import { toast } from 'react-toastify';
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -33,17 +34,12 @@ const Login = () => {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const data = await authAPI.login(formData);
-      authAPI.saveAuth(data.access_token);
+    const result = await dispatch(login(formData));
+    if (login.fulfilled.match(result)) {
       toast.success('Sesión iniciada');
       navigate('/');
-    } catch (error) {
-      toast.error(error.message || 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
+    } else if (login.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al iniciar sesión');
     }
   };
 
@@ -139,8 +135,8 @@ const Login = () => {
               </div>
             </div>
 
-            <Button type="submit" fullWidth disabled={loading}>
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            <Button type="submit" fullWidth>
+              Iniciar Sesión
             </Button>
           </form>
         </div>

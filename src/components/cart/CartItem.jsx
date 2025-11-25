@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { getTokenFromStore } from '../../store';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount } from '../../store/slices/cartSlice';
@@ -28,7 +29,7 @@ export const CartItem = ({ item }) => {
         return;
       }
       try {
-        const token = localStorage.getItem('token');
+        const token = getTokenFromStore();
         const url = imagesAPI.getImageUrl(imageId);
         const response = await fetch(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},

@@ -4,16 +4,25 @@ import { AppRoutes } from './routes/AppRoutes';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { fetchCart } from './store/slices/cartSlice';
-import { isBuyer, isAuthenticated } from './utils/auth';
+import { getLoggedUser } from './store/slices/authSlice';
+import { isBuyer } from './utils/auth';
 
 function App() {
   const dispatch = useDispatch();
+  const { isAuthenticated, token, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    if (isAuthenticated() && isBuyer()) {
+    // Cargar información del usuario si hay token pero no hay usuario
+    if (token && !user) {
+      dispatch(getLoggedUser());
+    }
+  }, [dispatch, token, user]);
+
+  useEffect(() => {
+    if (isAuthenticated && isBuyer()) {
       dispatch(fetchCart());
     }
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   return (
     <>

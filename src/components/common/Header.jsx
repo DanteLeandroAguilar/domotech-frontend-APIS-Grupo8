@@ -1,28 +1,17 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { authAPI } from '../../api/endpoints/auth';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
 import { isSeller as authIsSeller, isBuyer as authIsBuyer } from '../../utils/auth';
 
 export const Header = () => {
+  const dispatch = useDispatch();
   const { itemCount } = useSelector((state) => state.cart);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showManagementMenu, setShowManagementMenu] = useState(false);
-
-  useEffect(() => {
-    loadAuthData();
-  }, []);
-
-  const loadAuthData = () => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
-    }
-  };
 
   const isSeller = () => authIsSeller();
   const isBuyer = () => authIsBuyer();
@@ -34,9 +23,8 @@ export const Header = () => {
     }
   };
 
-  const handleLogout = () => {
-    authAPI.logout();
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await dispatch(logout());
     navigate('/');
   };
 

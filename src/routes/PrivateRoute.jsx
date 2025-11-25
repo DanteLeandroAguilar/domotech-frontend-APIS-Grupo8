@@ -1,19 +1,8 @@
 import { Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 
 export const PrivateRoute = ({ children, requiredRole }) => {
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
-    }
-    
-    setLoading(false);
-  }, []);
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
 
   if (loading) {
     return (

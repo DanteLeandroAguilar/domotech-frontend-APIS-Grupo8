@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { authAPI } from '../api/endpoints/auth';
+import { register } from '../store/slices/authSlice';
 import { toast } from 'react-toastify';
 
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     username: '',
     firstname: '',
@@ -16,7 +18,6 @@ const Register = () => {
     confirmPassword: '',
     role: 'BUYER',
   });
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -43,27 +44,19 @@ const Register = () => {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const data = await authAPI.register({
-        username: formData.username,
-        firstname: formData.firstname,
-        lastname: formData.lastname,
-        email: formData.email,
-        password: formData.password,
-              });
-      
-      console.log('Respuesta del registro:', data);
-      
-      authAPI.saveAuth(data.access_token);
+    const result = await dispatch(register({
+      username: formData.username,
+      firstname: formData.firstname,
+      lastname: formData.lastname,
+      email: formData.email,
+      password: formData.password,
+    }));
+    
+    if (register.fulfilled.match(result)) {
       toast.success('Cuenta creada correctamente');
       navigate('/');
-    } catch (error) {
-      console.error('Error en el registro:', error);
-      toast.error(error.message || 'Error al registrarse');
-    } finally {
-      setLoading(false);
+    } else if (register.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al registrarse');
     }
   };
 
@@ -257,8 +250,8 @@ const Register = () => {
 
             </div>
 
-            <Button type="submit" fullWidth disabled={loading}>
-              {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
+            <Button type="submit" fullWidth>
+              Crear Cuenta
             </Button>
           </form>
         </div>

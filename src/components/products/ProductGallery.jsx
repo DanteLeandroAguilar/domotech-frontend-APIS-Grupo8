@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { imagesAPI } from '../../api/endpoints/images';
+import { getTokenFromStore } from '../../store';
 
 export const ProductGallery = ({ images = [] }) => {
   const [selectedImage, setSelectedImage] = useState(0);
@@ -14,7 +15,7 @@ export const ProductGallery = ({ images = [] }) => {
 
     const loadBlobs = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = getTokenFromStore();
         const urls = await Promise.all(
           images.map(async (image) => {
             const url = imagesAPI.getImageUrl(image.imageId);

@@ -5,6 +5,7 @@ import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } fr
 import { imagesAPI } from '../../api/endpoints/images';
 import { isSeller as authIsSeller } from '../../utils/auth';
 import { updateProductAmount, fetchCart } from '../../store/slices/cartSlice';
+import { getTokenFromStore } from '../../store';
 
 export const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
@@ -18,13 +19,11 @@ export const ProductCard = ({ product }) => {
     }
   }, [isAuthenticated, cart, dispatch]);
 
+  const { isAuthenticated: authIsAuthenticated } = useSelector((state) => state.auth);
+
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
-    }
-  }, []);
+    setIsAuthenticated(authIsAuthenticated);
+  }, [authIsAuthenticated]);
 
   const isSeller = () => authIsSeller();
 
@@ -40,7 +39,7 @@ export const ProductCard = ({ product }) => {
     const loadBlob = async () => {
       if (!product?.principalImage?.imageId) return;
       try {
-        const token = localStorage.getItem('token');
+        const token = getTokenFromStore();
         const url = imagesAPI.getImageUrl(product.principalImage.imageId);
         const response = await fetch(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},

@@ -1,6 +1,7 @@
-// Utilidades de autenticación basadas en JWT almacenado en localStorage
+// Utilidades de autenticación basadas en JWT del store de Redux
+import { getTokenFromStore } from '../store';
 
-const getToken = () => localStorage.getItem('token');
+const getToken = () => getTokenFromStore();
 
 const decodeJwt = () => {
   try {

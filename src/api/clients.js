@@ -1,3 +1,5 @@
+import { getTokenFromStore } from '../store';
+
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4003';
 
 // Rutas públicas que no requieren token
@@ -37,7 +39,7 @@ const createHeaders = (url, customHeaders = {}) => {
 
   // Agregar token solo si no es una ruta pública
   if (!isPublicRoute(url)) {
-    const token = localStorage.getItem('token');
+    const token = getTokenFromStore();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -52,7 +54,8 @@ const handleResponse = (response) => {
     if (!response.ok) {
       // Manejar error 401 (no autorizado)
       if (response.status === 401) {
-        localStorage.removeItem('token');
+        // El logout se manejará desde el componente que detecte el error
+        // Por ahora, redirigir al login
         window.location.href = '/login';
       }
       

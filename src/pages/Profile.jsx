@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
-import { authAPI } from '../api/endpoints/auth';
+import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
+import { isBuyer } from '../utils/auth';
+import { toast } from 'react-toastify';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { orders, loading: loadingOrders, error: ordersError } = useSelector((state) => state.orders);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { user: userInfo, loading, error, isAuthenticated, token } = useSelector((state) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -21,58 +20,44 @@ const Profile = () => {
     lastName: '',
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState(null);
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' o 'orders'
   const [productImages, setProductImages] = useState({});
+  const imagesLoadedRef = useRef(false);
+  const ordersLengthRef = useRef(0);
+  const productImagesRef = useRef({});
 
+  // Asegurar que los vendedores no puedan acceder al tab de pedidos
   useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
+    if (!isBuyer() && activeTab === 'orders') {
+      setActiveTab('profile');
+    }
+  }, [activeTab]);
 
-      setIsAuthenticated(true);
-      try {
-        const userData = await authAPI.getLoggedUser();
-        setUserInfo(userData);
-        setFormData({
-          username: userData.username || '',
-          email: userData.email || '',
-          name: userData.name || '',
-          lastName: userData.lastName || '',
-        });
-      } catch (err) {
-        console.error('Error al obtener datos del usuario:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
+  // Inicializar formData solo cuando se carga el usuario por primera vez y no está editando
   useEffect(() => {
-    if (activeTab === 'orders' && isAuthenticated && orders.length === 0) {
+    if (userInfo && !isEditing && !formData.username) {
+      setFormData({
+        username: userInfo.username || '',
+        email: userInfo.email || '',
+        name: userInfo.name || '',
+        lastName: userInfo.lastName || '',
+      });
+    }
+  }, [userInfo, isEditing, formData.username]);
+
+  // Cargar órdenes solo cuando se cambia a la pestaña de órdenes (solo para compradores)
+  useEffect(() => {
+    if (isBuyer() && activeTab === 'orders' && userInfo && orders.length === 0 && !loadingOrders) {
       dispatch(fetchMyOrders());
     }
-  }, [activeTab, isAuthenticated, dispatch, orders.length]);
+  }, [activeTab, userInfo, dispatch, orders.length, loadingOrders]);
 
-  // Cargar imágenes cuando cambian las órdenes
-  useEffect(() => {
-    if (orders.length > 0) {
-      loadOrderProductImages();
-    }
-  }, [orders]);
-
-
-  const loadOrderProductImages = async () => {
+  // Función para cargar imágenes de productos
+  const loadOrderProductImages = useCallback(async () => {
+    if (!token || orders.length === 0) return;
+    
     try {
       const images = {};
-      const token = localStorage.getItem('token');
       
       // Recopilar todos los productIds únicos de todas las órdenes
       const productIds = new Set();
@@ -92,7 +77,7 @@ const Profile = () => {
               const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
               
               const response = await fetch(imageUrl, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                headers: { Authorization: `Bearer ${token}` },
               });
               const blob = await response.blob();
               images[productId] = URL.createObjectURL(blob);
@@ -104,17 +89,45 @@ const Profile = () => {
       );
       
       setProductImages(images);
+      productImagesRef.current = images;
+      imagesLoadedRef.current = true;
     } catch (error) {
       console.error('Error al cargar imágenes de productos:', error);
     }
-  };
+  }, [orders, token]);
+
+  // Cargar imágenes solo cuando cambia a la pestaña de órdenes y hay órdenes nuevas (solo para compradores)
+  useEffect(() => {
+    if (isBuyer() && activeTab === 'orders' && orders.length > 0) {
+      // Si cambió el número de órdenes, resetear el flag y cargar imágenes
+      if (orders.length !== ordersLengthRef.current) {
+        imagesLoadedRef.current = false;
+        ordersLengthRef.current = orders.length;
+      }
+      
+      if (!imagesLoadedRef.current && token) {
+        loadOrderProductImages();
+      }
+    }
+  }, [activeTab, orders.length, token, loadOrderProductImages]);
+
+  // Limpiar imágenes cuando se cambia a la pestaña de perfil
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      imagesLoadedRef.current = false;
+      // Limpiar Object URLs
+      Object.values(productImagesRef.current).forEach((url) => URL.revokeObjectURL(url));
+      productImagesRef.current = {};
+      setProductImages({});
+    }
+  }, [activeTab]);
 
   // Limpiar Object URLs al desmontar el componente
   useEffect(() => {
     return () => {
-      Object.values(productImages).forEach((url) => URL.revokeObjectURL(url));
+      Object.values(productImagesRef.current).forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [productImages]);
+  }, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -164,12 +177,10 @@ const Profile = () => {
   const handleEditClick = () => {
     setIsEditing(true);
     setSaveSuccess(false);
-    setSaveError(null);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setSaveError(null);
     // Restaurar los datos originales
     setFormData({
       username: userInfo.username || '',
@@ -189,18 +200,21 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaveError(null);
     setSaveSuccess(false);
 
-    try {
-      const updatedUser = await authAPI.updateUser(userInfo.idUser, formData);
-      setUserInfo(updatedUser);
+    if (!userInfo?.idUser) {
+      toast.error('No se pudo identificar al usuario');
+      return;
+    }
+
+    const result = await dispatch(updateUser({ id: userInfo.idUser, userData: formData }));
+    if (updateUser.fulfilled.match(result)) {
       setIsEditing(false);
       setSaveSuccess(true);
+      toast.success('Perfil actualizado correctamente');
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
-      console.error('Error al actualizar usuario:', err);
-      setSaveError(err.message);
+    } else if (updateUser.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al actualizar el perfil');
     }
   };
 
@@ -242,16 +256,18 @@ const Profile = () => {
               >
                 Perfil
               </button>
-              <button
-                onClick={() => setActiveTab('orders')}
-                className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
-                  activeTab === 'orders'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
-                }`}
-              >
-                Pedidos
-              </button>
+              {isBuyer() && (
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                    activeTab === 'orders'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Pedidos
+                </button>
+              )}
             </nav>
           </div>
 
@@ -285,11 +301,6 @@ const Profile = () => {
                 userInfo ? (
                   isEditing ? (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                      {saveError && (
-                        <div className="p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg text-sm">
-                          {saveError}
-                        </div>
-                      )}
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -407,7 +418,7 @@ const Profile = () => {
           )}
 
           {/* Orders Tab Content */}
-          {activeTab === 'orders' && (
+          {activeTab === 'orders' && isBuyer() && (
             <div className="space-y-4">
               {loadingOrders ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700 text-center">

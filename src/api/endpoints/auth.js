@@ -25,21 +25,6 @@ export const authAPI = {
     }
   },
 
-  // Guardar token en localStorage
-  saveAuth: (token) => {
-    localStorage.setItem('token', token);
-  },
-
-  // Obtener token
-  getToken: () => {
-    return localStorage.getItem('token');
-  },
-
-  // Logout
-  logout: () => {
-    localStorage.removeItem('token');
-  },
-
   // GET /auth/me - Obtener información del usuario autenticado
   getLoggedUser: async () => {
     try {
