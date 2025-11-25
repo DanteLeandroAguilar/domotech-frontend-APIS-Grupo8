@@ -1,13 +1,22 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { isSeller as authIsSeller } from '../../utils/auth';
-import { cartAPI } from '../../api/endpoints/cart';
+import { updateProductAmount, fetchCart } from '../../store/slices/cartSlice';
 
-export const ProductCard = ({ product, updateCartCount }) => {
-  const [loading, setLoading] = useState(false);
+export const ProductCard = ({ product }) => {
+  const dispatch = useDispatch();
+  const { cart, updating } = useSelector((state) => state.cart);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Cargar carrito si está autenticado y no hay carrito
+    if (isAuthenticated && !cart) {
+      dispatch(fetchCart());
+    }
+  }, [isAuthenticated, cart, dispatch]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -56,25 +65,12 @@ export const ProductCard = ({ product, updateCartCount }) => {
     e.preventDefault();
     if (!isAuthenticated || isSeller()) return;
 
-    setLoading(true);
-    try {
-      // Obtener cantidad actual en carrito para este producto y sumar 1
-      const cart = await cartAPI.getMyCart();
-      const existingItem = cart?.items?.find((it) => it.productId === product.productId);
-      const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
-      const desired = currentAmount + 1;
-      const newAmount = desired;
+    // Obtener cantidad actual en carrito para este producto y sumar 1
+    const existingItem = cart?.items?.find((it) => it.productId === product.productId);
+    const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
+    const newAmount = currentAmount + 1;
 
-      await cartAPI.updateProductAmount(product.productId, newAmount);
-      if (updateCartCount) {
-        updateCartCount();
-      }
-      console.log('Producto agregado al carrito');
-    } catch (error) {
-      console.error('Error al agregar al carrito:', error);
-    } finally {
-      setLoading(false);
-    }
+    await dispatch(updateProductAmount({ productId: product.productId, amount: newAmount }));
   };
 
   return (
@@ -127,10 +123,10 @@ export const ProductCard = ({ product, updateCartCount }) => {
           {isAuthenticated && !isSeller() && product.active && product.available && (
             <button
               onClick={handleAddToCart}
-              disabled={loading || !product.available}
+              disabled={updating || !product.available}
               className="text-sm bg-primary text-white px-3 py-1 rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Agregando...' : 'Agregar'}
+              {updating ? 'Agregando...' : 'Agregar'}
             </button>
           )}
         </div>

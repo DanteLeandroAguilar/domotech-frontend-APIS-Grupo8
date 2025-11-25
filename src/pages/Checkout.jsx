@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { cartAPI } from '../api/endpoints/cart';
+import { fetchCart } from '../store/slices/cartSlice';
 import { confirmOrder } from '../store/slices/ordersSlice';
 import { formatPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
@@ -13,7 +13,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { confirming, confirmError } = useSelector((state) => state.orders);
-  const [cart, setCart] = useState(null);
+  const { cart } = useSelector((state) => state.cart);
   const [formData, setFormData] = useState({
     fullName: '',
     address: '',
@@ -31,17 +31,8 @@ const Checkout = () => {
   });
 
   useEffect(() => {
-    loadCart();
-  }, []);
-
-  const loadCart = async () => {
-    try {
-      const data = await cartAPI.getMyCart();
-      setCart(data);
-    } catch (error) {
-      console.error('Error al cargar carrito:', error);
-    }
-  };
+    dispatch(fetchCart());
+  }, [dispatch]);
 
   const getCartTotal = () => {
     if (!cart || !cart.items) return 0;

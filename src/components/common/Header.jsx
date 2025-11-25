@@ -1,9 +1,11 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { authAPI } from '../../api/endpoints/auth';
 import { isSeller as authIsSeller, isBuyer as authIsBuyer } from '../../utils/auth';
 
-export const Header = ({ cartItemsCount = 0 }) => {
+export const Header = () => {
+  const { itemCount } = useSelector((state) => state.cart);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,9 +127,9 @@ export const Header = ({ cartItemsCount = 0 }) => {
             {isAuthenticated && isBuyer() && (
               <Link to="/cart" className="relative rounded-lg p-2 text-white dark:text-gray-300 hover:text-yellow-500 transition-colors">
                 <span className="material-symbols-outlined">shopping_cart</span>
-                {cartItemsCount > 0 && (
+                {itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    {cartItemsCount}
+                    {itemCount}
                   </span>
                 )}
               </Link>

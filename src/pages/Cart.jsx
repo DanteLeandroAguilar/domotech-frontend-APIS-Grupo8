@@ -1,58 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
-import { cartAPI } from '../api/endpoints/cart';
+import { fetchCart, clearCart as clearCartAction } from '../store/slices/cartSlice';
 
-const Cart = ({ cartItemsCount, updateCartCount }) => {
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(false);
+const Cart = () => {
+  const dispatch = useDispatch();
+  const { cart, loading, error } = useSelector((state) => state.cart);
 
   useEffect(() => {
-    loadCart();
-  }, []);
-
-  const loadCart = async () => {
-    try {
-      setLoading(true);
-      const data = await cartAPI.getMyCart();
-      setCart(data);
-      if (updateCartCount) {
-        updateCartCount();
-      }
-    } catch (error) {
-      console.error('Error al cargar carrito:', error);
-      setCart({
-        id: 1,
-        items: [],
-        total: 0,
-        itemCount: 0
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchCart());
+  }, [dispatch]);
 
   const handleClearCart = async () => {
     if (!window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) return;
-    try {
-      setLoading(true);
-      const current = await cartAPI.getMyCart();
-      const items = current?.items || [];
-      await Promise.all(items.map((it) => cartAPI.updateProductAmount(it.productId, 0)));
-      await loadCart();
-    } catch (error) {
-      console.error('Error al vaciar carrito:', error);
-    } finally {
-      setLoading(false);
-    }
+    await dispatch(clearCartAction());
   };
 
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header cartItemsCount={cartItemsCount} />
+        <Header />
         <main className="flex-grow">
           <Loading message="Cargando carrito..." />
         </main>
@@ -62,7 +32,7 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark">
-      <Header cartItemsCount={cartItemsCount} />
+      <Header />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {!cart || !cart.items || cart.items.length === 0 ? (
@@ -93,7 +63,7 @@ const Cart = ({ cartItemsCount, updateCartCount }) => {
               
               <div className="space-y-4">
                 {cart.items.map((item) => (
-                  <CartItem key={item.id || item.productId} item={item} onUpdate={loadCart} />
+                  <CartItem key={item.id || item.productId} item={item} />
                 ))}
               </div>
 

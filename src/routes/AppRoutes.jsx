@@ -17,23 +17,23 @@ import ProductManagement from '../pages/admin/ProductManagement';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import CategoryManagement from '../pages/admin/CategoryManagement';
 
-export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
+export const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
         {/* Rutas Públicas */}
-        <Route path="/" element={<Home cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />} />
-        <Route path="/catalog" element={<Catalog cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />} />
-        <Route path="/product/:id" element={<ProductDetail cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />} />
-        <Route path="/login" element={<Login cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />} />
-        <Route path="/register" element={<Register cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/catalog" element={<Catalog />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Rutas Protegidas - BUYER */}
         <Route
           path="/cart"
           element={
             <PrivateRoute>
-              <Cart cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+              <Cart />
             </PrivateRoute>
           }
         />
@@ -41,7 +41,7 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
           path="/checkout"
           element={
             <PrivateRoute requiredRole="BUYER">
-              <Checkout cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+              <Checkout />
             </PrivateRoute>
           }
         />
@@ -49,7 +49,7 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
           path="/order-summary"
           element={
             <PrivateRoute requiredRole="BUYER">
-              <OrderSummary cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+              <OrderSummary />
             </PrivateRoute>
           }
         />
@@ -57,7 +57,7 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
           path="/profile"
           element={
             <PrivateRoute>
-              <Profile cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+              <Profile />
             </PrivateRoute>
           }
         />
@@ -67,7 +67,7 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
           path="/admin"
           element={
             <PrivateRoute requiredRole="SELLER">
-              <AdminDashboard cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+              <AdminDashboard />
             </PrivateRoute>
           }
         />
@@ -75,7 +75,7 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
           path="/admin/products"
           element={
             <PrivateRoute requiredRole="SELLER">
-              <ProductManagement cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+              <ProductManagement />
             </PrivateRoute>
           }
         />
@@ -83,7 +83,7 @@ export const AppRoutes = ({ cartItemsCount, updateCartCount }) => {
           path="/admin/categories"
           element={
             <PrivateRoute requiredRole="SELLER">
-              <CategoryManagement cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+              <CategoryManagement />
             </PrivateRoute>
           }
         />

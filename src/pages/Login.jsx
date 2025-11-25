@@ -5,7 +5,7 @@ import { Button } from '../components/common/Button';
 import { authAPI } from '../api/endpoints/auth';
 import { toast } from 'react-toastify';
 
-const Login = ({ cartItemsCount }) => {
+const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -49,7 +49,7 @@ const Login = ({ cartItemsCount }) => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <Header cartItemsCount={cartItemsCount} />
+      <Header />
       
       <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">

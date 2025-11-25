@@ -6,7 +6,7 @@ import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { productsAPI } from '../api/endpoints/products';
 import { imagesAPI } from '../api/endpoints/images';
 
-const Profile = ({ cartItemsCount }) => {
+const Profile = () => {
   const dispatch = useDispatch();
   const { orders, loading: loadingOrders, error: ordersError } = useSelector((state) => state.orders);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -206,7 +206,7 @@ const Profile = ({ cartItemsCount }) => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header cartItemsCount={cartItemsCount} />
+      <Header />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto">
