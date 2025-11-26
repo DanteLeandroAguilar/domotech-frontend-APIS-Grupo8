@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { updateUser } from '../store/slices/authSlice';
@@ -176,6 +176,11 @@ const Profile = () => {
     };
     return texts[status] || status;
   };
+
+  // Ordenar órdenes por orderId descendente (más recientes primero)
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => b.orderId - a.orderId);
+  }, [orders]);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -431,13 +436,13 @@ const Profile = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700">
                   <p className="text-red-600 dark:text-red-400">Error: {ordersError}</p>
                 </div>
-              ) : orders.length === 0 ? (
+              ) : sortedOrders.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700 text-center">
                   <span className="material-symbols-outlined text-gray-400 text-6xl mb-4">shopping_bag</span>
                   <p className="text-gray-600 dark:text-gray-400">No tienes pedidos aún</p>
                 </div>
               ) : (
-                orders.map((order) => (
+                sortedOrders.map((order) => (
                   <div
                     key={order.orderId}
                     className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700"

@@ -19,4 +19,10 @@ export const ordersAPI = {
     const response = await api.get('/orders', { params });
     return response;
   },
+
+  // PATCH /orders/{orderId}/status - Actualizar estado de orden (solo SELLER)
+  updateStatus: async (orderId, orderStatus) => {
+    const response = await api.patch(`/orders/${orderId}/status`, { orderStatus });
+    return response;
+  },
 };
