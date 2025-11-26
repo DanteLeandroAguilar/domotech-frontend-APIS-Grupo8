@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount } from '../../store/slices/cartSlice';
+import { RoomSelector } from '../common/RoomSelector';
 
 export const CartItem = ({ item }) => {
   const dispatch = useDispatch();
@@ -38,6 +39,12 @@ export const CartItem = ({ item }) => {
   }, [item.product?.principalImage?.imageId, item.productId]);
 
   const room = item.room || 'general';
+  const [selectedRoom, setSelectedRoom] = useState(room);
+
+  // Sincronizar selectedRoom cuando cambia el item.room
+  useEffect(() => {
+    setSelectedRoom(room);
+  }, [room]);
 
   const handleIncrease = async () => {
     await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount + 1, room }));
@@ -53,13 +60,25 @@ export const CartItem = ({ item }) => {
     await dispatch(updateProductAmount({ productId: item.productId, amount: 0, room }));
   };
 
+  const handleRoomChange = async (newRoom) => {
+    if (newRoom === selectedRoom) return; // No hacer nada si es la misma habitación
+    
+    setSelectedRoom(newRoom);
+    
+    // Primero eliminar de la habitación actual
+    await dispatch(updateProductAmount({ productId: item.productId, amount: 0, room }));
+    
+    // Luego agregar a la nueva habitación con la misma cantidad
+    await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount, room: newRoom }));
+  };
+
   // Usar los valores que vienen del backend
   const discount = item.discount || 0;
   const unitFinalPrice = item.price * (1 - discount / 100);
   const subtotal = item.finalPrice || (unitFinalPrice * item.amount);
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors overflow-visible relative">
       {/* Imagen */}
       <div className="flex-shrink-0">
         <img
@@ -70,11 +89,11 @@ export const CartItem = ({ item }) => {
       </div>
 
       {/* Información del producto */}
-      <div className="flex-grow min-w-0">
-        <h3 className="font-bold text-gray-900 dark:text-white mb-1 truncate">
+      <div className="flex-grow min-w-0 flex-1">
+        <h3 className="font-bold text-gray-900 dark:text-white mb-2 truncate">
           {item.productName}
         </h3>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap mb-3">
           {discount > 0 ? (
             <>
               <p className="text-sm text-gray-400 dark:text-gray-500 line-through">
@@ -96,46 +115,60 @@ export const CartItem = ({ item }) => {
             c/u
           </span>
         </div>
+        {/* Selector de habitación */}
+        <div className="w-full max-w-[200px] relative z-10" onClick={(e) => e.stopPropagation()}>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            Habitación
+          </label>
+          <RoomSelector
+            value={selectedRoom}
+            onChange={handleRoomChange}
+            className="w-full"
+          />
+        </div>
       </div>
 
-      {/* Controles de cantidad */}
-      <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 px-2 py-1">
+      {/* Controles y acciones */}
+      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 flex-shrink-0">
+        {/* Controles de cantidad */}
+        <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 px-2 py-1">
+          <button
+            onClick={handleDecrease}
+            disabled={updating || item.amount <= 1}
+            className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Disminuir cantidad"
+          >
+            <span className="material-symbols-outlined text-lg">remove</span>
+          </button>
+          <span className="w-8 text-center font-semibold text-gray-900 dark:text-white">{item.amount}</span>
+          <button
+            onClick={handleIncrease}
+            disabled={updating}
+            className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            aria-label="Aumentar cantidad"
+          >
+            <span className="material-symbols-outlined text-lg">add</span>
+          </button>
+        </div>
+
+        {/* Subtotal */}
+        <div className="text-right min-w-[100px]">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Subtotal</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">
+            {formatPrice(subtotal)}
+          </p>
+        </div>
+
+        {/* Botón eliminar */}
         <button
-          onClick={handleDecrease}
-          disabled={updating || item.amount <= 1}
-          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          aria-label="Disminuir cantidad"
-        >
-          <span className="material-symbols-outlined text-lg">remove</span>
-        </button>
-        <span className="w-8 text-center font-semibold text-gray-900 dark:text-white">{item.amount}</span>
-        <button
-          onClick={handleIncrease}
+          onClick={handleRemove}
           disabled={updating}
-          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
-          aria-label="Aumentar cantidad"
+          className="flex-shrink-0 p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+          aria-label="Eliminar producto"
         >
-          <span className="material-symbols-outlined text-lg">add</span>
+          <span className="material-symbols-outlined">delete</span>
         </button>
       </div>
-
-      {/* Subtotal */}
-      <div className="text-right min-w-[100px]">
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Subtotal</p>
-        <p className="text-lg font-bold text-gray-900 dark:text-white">
-          {formatPrice(subtotal)}
-        </p>
-      </div>
-
-      {/* Botón eliminar */}
-      <button
-        onClick={handleRemove}
-        disabled={updating}
-        className="flex-shrink-0 p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
-        aria-label="Eliminar producto"
-      >
-        <span className="material-symbols-outlined">delete</span>
-      </button>
     </div>
   );
 };

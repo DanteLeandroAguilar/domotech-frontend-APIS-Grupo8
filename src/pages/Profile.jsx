@@ -217,10 +217,6 @@ const Profile = () => {
       return;
     }
 
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar la habitación "${roomName}"?`)) {
-      return;
-    }
-
     try {
       await roomsAPI.deleteRoom(roomId);
       toast.success('Habitación eliminada correctamente');

@@ -104,7 +104,7 @@ const Cart = () => {
                   return (
                     <div 
                       key={room} 
-                      className="rounded-xl bg-white dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden transition-all hover:shadow-xl"
+                      className="rounded-xl bg-white dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 shadow-lg overflow-visible transition-all hover:shadow-xl"
                     >
                       {/* Encabezado de la habitación */}
                       <div className="bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-b-2 border-primary/20 dark:border-primary/30 px-6 py-4">
@@ -117,7 +117,7 @@ const Cart = () => {
                             </div>
                             <div>
                               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {room === 'general' ? 'Habitación General' : room.charAt(0).toUpperCase() + room.slice(1)}
+                                {room === 'general' ? 'General' : room.charAt(0).toUpperCase() + room.slice(1)}
                               </h2>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
                                 {roomItemCount} {roomItemCount === 1 ? 'producto' : 'productos'}
@@ -134,7 +134,7 @@ const Cart = () => {
                       </div>
 
                       {/* Lista de productos de la habitación */}
-                      <div className="p-4 space-y-3">
+                      <div className="p-4 space-y-3 overflow-visible">
                         {items.map((item) => (
                           <CartItem key={item.id || `${item.productId}-${room}`} item={item} />
                         ))}

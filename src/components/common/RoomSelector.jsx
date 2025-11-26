@@ -142,7 +142,7 @@ export const RoomSelector = ({ value, onChange, className = '', onRoomsChange })
 
       {isOpen && (
         <div 
-          className="absolute z-[100] w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto"
+          className="absolute z-40 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto"
           onClick={(e) => e.stopPropagation()}
           style={{ position: 'absolute' }}
         >
