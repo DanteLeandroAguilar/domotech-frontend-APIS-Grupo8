@@ -38,6 +38,15 @@ export const fetchAllOrders = createAsyncThunk(
   }
 );
 
+// Thunk para actualizar el estado de una orden (solo SELLER)
+export const updateOrderStatus = createAsyncThunk(
+  'orders/updateStatus',
+  async ({ orderId, orderStatus }) => {
+    const response = await ordersAPI.updateStatus(orderId, orderStatus);
+    return response;
+  }
+);
+
 // Slice de orders
 const ordersSlice = createSlice({
   name: 'orders',
@@ -126,6 +135,34 @@ const ordersSlice = createSlice({
         const error = action.payload || action.error;
         state.error = error?.message || 'Error al cargar las órdenes';
         state.orders = [];
+      });
+
+    // Actualizar estado de orden
+    builder
+      .addCase(updateOrderStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateOrderStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        const updatedOrder = action.payload;
+        // Actualizar la orden en la lista
+        const index = state.orders.findIndex(order => order.orderId === updatedOrder.orderId);
+        if (index !== -1) {
+          state.orders[index] = updatedOrder;
+        } else {
+          state.orders.push(updatedOrder);
+        }
+        // Si es la orden actual, actualizarla también
+        if (state.currentOrder?.orderId === updatedOrder.orderId) {
+          state.currentOrder = updatedOrder;
+        }
+      })
+      .addCase(updateOrderStatus.rejected, (state, action) => {
+        state.loading = false;
+        const error = action.payload || action.error;
+        state.error = error?.message || 'Error al actualizar el estado de la orden';
       });
   },
 });
