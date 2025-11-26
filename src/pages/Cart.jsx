@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { CartItem } from '../components/cart/CartItem';
@@ -13,6 +13,34 @@ const Cart = () => {
   const handleClearCart = async () => {
     await dispatch(clearCartAction());
   };
+
+  // Agrupar items por habitación
+  const groupedItems = useMemo(() => {
+    if (!cart?.items || cart.items.length === 0) return {};
+
+    const grouped = {};
+    cart.items.forEach((item) => {
+      const room = item.room || 'general';
+      if (!grouped[room]) {
+        grouped[room] = [];
+      }
+      grouped[room].push(item);
+    });
+
+    // Ordenar habitaciones: "general" primero, luego alfabético
+    const sortedRooms = Object.keys(grouped).sort((a, b) => {
+      if (a === 'general') return -1;
+      if (b === 'general') return 1;
+      return a.localeCompare(b);
+    });
+
+    const sortedGrouped = {};
+    sortedRooms.forEach((room) => {
+      sortedGrouped[room] = grouped[room];
+    });
+
+    return sortedGrouped;
+  }, [cart?.items]);
 
   if (loading) {
     return (
@@ -56,9 +84,17 @@ const Cart = () => {
                 Carrito de Compras
               </h1>
               
-              <div className="space-y-4">
-                {cart.items.map((item) => (
-                  <CartItem key={item.id || item.productId} item={item} />
+              <div className="space-y-6">
+                {Object.entries(groupedItems).map(([room, items]) => (
+                  <div key={room} className="space-y-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                      <span className="material-symbols-outlined text-lg align-middle mr-2">room</span>
+                      {room.charAt(0).toUpperCase() + room.slice(1)}
+                    </h2>
+                    {items.map((item) => (
+                      <CartItem key={item.id || `${item.productId}-${room}`} item={item} />
+                    ))}
+                  </div>
                 ))}
               </div>
 

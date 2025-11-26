@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount } from '../../store/slices/cartSlice';
+import { RoomSelector } from '../common/RoomSelector';
 
 export const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
@@ -12,6 +13,7 @@ export const ProductCard = ({ product }) => {
 
   
   const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/300x300?text=Sin+Imagen');
+  const [selectedRoom, setSelectedRoom] = useState('general');
 
   // Cargar imagen en base64
   useEffect(() => {
@@ -38,62 +40,72 @@ export const ProductCard = ({ product }) => {
     e.preventDefault();
     if (!isAuthenticated || isSeller) return;
 
-    // Obtener cantidad actual en carrito para este producto y sumar 1
-    const existingItem = cart?.items?.find((it) => it.productId === product.productId);
+    // Buscar item existente con el mismo producto Y habitación
+    const existingItem = cart?.items?.find(
+      (it) => it.productId === product.productId && (it.room || 'general') === selectedRoom
+    );
     const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
     const newAmount = currentAmount + 1;
 
-    await dispatch(updateProductAmount({ productId: product.productId, amount: newAmount }));
+    await dispatch(updateProductAmount({ productId: product.productId, amount: newAmount, room: selectedRoom }));
   };
 
   return (
-    <Link 
-      to={`/product/${product.productId}`}
-      className="product-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden group hover:shadow-xl transition-all duration-300"
-    >
-      <div className="relative">
-        <div 
-          className="w-full h-56 bg-cover bg-center"
-          style={{ backgroundImage: `url(${imageUrl})` }}
-        />
-        {discountPercentage > 0 && (
-          <div className="absolute top-2 right-2 bg-green-500/30 text-xs px-2 py-1 rounded-full font-bold" style={{color:'#00FF7F'}}>
-            {discountPercentage}% OFF
-          </div>
-        )}
-        {!product.active && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white font-bold">No Disponible</span>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4">
-        <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1 truncate">
-          {product.name}
-        </h3>
-        
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">
-          {product.description}
-        </p>
-
-        <div className="flex items-baseline gap-2 mb-3">
-          <p className="text-primary font-bold text-xl">
-            {formatPrice(finalPrice)}
-          </p>
+    <div className="product-card bg-white dark:bg-gray-800 rounded-lg overflow-visible group hover:shadow-xl transition-all duration-300">
+      <Link 
+        to={`/product/${product.productId}`}
+        className="block"
+      >
+        <div className="relative overflow-hidden">
+          <div 
+            className="w-full h-56 bg-cover bg-center"
+            style={{ backgroundImage: `url(${imageUrl})` }}
+          />
           {discountPercentage > 0 && (
-            <p className="text-gray-500 dark:text-gray-400 text-sm line-through">
-              {formatPrice(product.price)}
-            </p>
+            <div className="absolute top-2 right-2 bg-green-500/30 text-xs px-2 py-1 rounded-full font-bold" style={{color:'#00FF7F'}}>
+              {discountPercentage}% OFF
+            </div>
+          )}
+          {!product.active && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span className="text-white font-bold">No Disponible</span>
+            </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {product.available ? '' : 'Sin Stock'}
-          </span>
+        <div className="p-4">
+          <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1 truncate">
+            {product.name}
+          </h3>
+          
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">
+            {product.description}
+          </p>
 
-          {isAuthenticated && !isSeller && product.active && product.available && (
+          <div className="flex items-baseline gap-2 mb-3">
+            <p className="text-primary font-bold text-xl">
+              {formatPrice(finalPrice)}
+            </p>
+            {discountPercentage > 0 && (
+              <p className="text-gray-500 dark:text-gray-400 text-sm line-through">
+                {formatPrice(product.price)}
+              </p>
+            )}
+          </div>
+        </div>
+      </Link>
+
+      {isAuthenticated && !isSeller && product.active && product.available && (
+        <div className="px-4 pb-4 space-y-2 relative z-50" onClick={(e) => e.stopPropagation()}>
+          <RoomSelector
+            value={selectedRoom}
+            onChange={setSelectedRoom}
+            className="w-full"
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {product.available ? '' : 'Sin Stock'}
+            </span>
             <button
               onClick={handleAddToCart}
               disabled={updating || !product.available}
@@ -101,9 +113,16 @@ export const ProductCard = ({ product }) => {
             >
               {updating ? 'Agregando...' : 'Agregar'}
             </button>
-          )}
+          </div>
         </div>
-      </div>
-    </Link>
+      )}
+      {(!isAuthenticated || isSeller || !product.active || !product.available) && (
+        <div className="px-4 pb-4 flex items-center justify-between">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {product.available ? '' : 'Sin Stock'}
+          </span>
+        </div>
+      )}
+    </div>
   );
 };

@@ -6,6 +6,7 @@ import { Footer } from '../components/common/Footer';
 import { ProductGallery } from '../components/products/ProductGallery';
 import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
+import { RoomSelector } from '../components/common/RoomSelector';
 import { fetchProductById } from '../store/slices/productsSlice';
 import { updateProductAmount } from '../store/slices/cartSlice';
 import { imagesAPI } from '../api/endpoints/images';
@@ -22,6 +23,7 @@ const ProductDetail = () => {
   
   const [images, setImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
+  const [selectedRoom, setSelectedRoom] = useState('general');
 
   useEffect(() => {
     dispatch(fetchProductById(id));
@@ -45,12 +47,14 @@ const ProductDetail = () => {
 
     if (!currentProduct) return;
 
-    // Sumar a la cantidad existente en carrito en lugar de fijarla
-    const existingItem = cart?.items?.find((it) => it.productId === currentProduct.productId);
+    // Buscar item existente con el mismo producto Y habitación
+    const existingItem = cart?.items?.find(
+      (it) => it.productId === currentProduct.productId && (it.room || 'general') === selectedRoom
+    );
     const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
     const newAmount = currentAmount + quantity;
     
-    const result = await dispatch(updateProductAmount({ productId: currentProduct.productId, amount: newAmount }));
+    const result = await dispatch(updateProductAmount({ productId: currentProduct.productId, amount: newAmount, room: selectedRoom }));
     if (updateProductAmount.fulfilled.match(result)) {
       // El carrito ya se actualizó con la respuesta del backend
       toast.success('Producto agregado al carrito');
@@ -153,23 +157,32 @@ const ProductDetail = () => {
               {product.description}
             </p>
 
-            {isAuthenticated && !isSeller && product.stock > 0 && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Cantidad</label>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    -
-                  </button>
-                  <span className="w-12 text-center font-semibold">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                    className="w-10 h-10 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    +
-                  </button>
+            {isAuthenticated && !isSeller && product.available && (
+              <div className="mb-6 space-y-4">
+                <div className="relative z-50">
+                  <label className="block text-sm font-medium mb-2">Habitación</label>
+                  <RoomSelector
+                    value={selectedRoom}
+                    onChange={setSelectedRoom}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Cantidad</label>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-10 h-10 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      -
+                    </button>
+                    <span className="w-12 text-center font-semibold">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      className="w-10 h-10 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

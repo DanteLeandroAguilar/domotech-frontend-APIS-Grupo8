@@ -37,18 +37,20 @@ export const CartItem = ({ item }) => {
     loadImage();
   }, [item.product?.principalImage?.imageId, item.productId]);
 
+  const room = item.room || 'general';
+
   const handleIncrease = async () => {
-    await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount + 1 }));
+    await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount + 1, room }));
   };
 
   const handleDecrease = async () => {
     if (item.amount > 1) {
-      await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount - 1 }));
+      await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount - 1, room }));
     }
   };
 
   const handleRemove = async () => {
-    await dispatch(updateProductAmount({ productId: item.productId, amount: 0 }));
+    await dispatch(updateProductAmount({ productId: item.productId, amount: 0, room }));
   };
 
   // Usar los valores que vienen del backend
@@ -67,9 +69,14 @@ export const CartItem = ({ item }) => {
 
       {/* Información del producto */}
       <div className="flex-grow">
-        <h3 className="font-bold text-gray-900 dark:text-white">
-          {item.productName}
-        </h3>
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-bold text-gray-900 dark:text-white">
+            {item.productName}
+          </h3>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+            {room.charAt(0).toUpperCase() + room.slice(1)}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           {discount > 0 ? (
             <>
