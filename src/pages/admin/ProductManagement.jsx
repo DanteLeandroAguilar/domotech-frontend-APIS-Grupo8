@@ -6,7 +6,7 @@ import { ProductForm } from '../../components/admin/ProductForm';
 import { ProductTable } from '../../components/admin/ProductTable';
 import { Loading } from '../../components/common/Loading';
 import { fetchAllProducts, createProduct, updateProduct, deleteProduct, updateProductStock } from '../../store/slices/productsSlice';
-import { imagesAPI } from '../../api/endpoints/images';
+import { deleteImage, uploadImage, markImageAsPrincipal } from '../../store/slices/imagesSlice';
 import { toast } from 'react-toastify';
 
 const ProductManagement = () => {
@@ -76,7 +76,7 @@ const ProductManagement = () => {
 
           for (const img of imagesToDelete) {
             try {
-              await imagesAPI.delete(img.imageId);
+              await dispatch(deleteImage({ imageId: img.imageId, productId }));
             } catch (error) {
               console.error('Error al eliminar imagen:', error);
             }
@@ -91,8 +91,12 @@ const ProductManagement = () => {
           try {
             const formDataImage = new FormData();
             formDataImage.append('file', img.file);
-            const response = await imagesAPI.upload(productId, formDataImage);
-            uploadedImages.push(response);
+            const result = await dispatch(uploadImage({ productId, formData: formDataImage }));
+            if (uploadImage.fulfilled.match(result)) {
+              uploadedImages.push(result.payload.image);
+            } else {
+              toast.error('Error al subir una o más imágenes');
+            }
           } catch (error) {
             console.error('Error al subir imagen:', error);
             toast.error('Error al subir una o más imágenes');
@@ -114,7 +118,7 @@ const ProductManagement = () => {
             }
             
             if (mainImageId && !mainImageId.toString().startsWith('new-')) {
-              await imagesAPI.markAsPrincipal(mainImageId);
+              await dispatch(markImageAsPrincipal({ imageId: mainImageId, productId }));
             }
           } catch (error) {
             console.error('Error al marcar imagen principal:', error);

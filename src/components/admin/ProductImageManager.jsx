@@ -1,50 +1,61 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Upload, X, Star } from 'lucide-react';
 import { Button } from '../common/Button';
 import { imagesAPI } from '../../api/endpoints/images';
+import { fetchImageBase64 } from '../../store/slices/imagesSlice';
 
 export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5 }) => {
+  const dispatch = useDispatch();
+  const { base64Images } = useSelector((state) => state.images);
   const [previewImages, setPreviewImages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
 
+  const { loadingImages } = useSelector((state) => state.images);
+
+  // Cargar imágenes que no estén en el estado
+  useEffect(() => {
+    if (images && images.length > 0) {
+      images.forEach((img) => {
+        const imageId = img.imageId || img.id;
+        // Solo cargar si no está en el estado, no es nueva, y no está cargando
+        if (imageId && !img.isNew && !base64Images[imageId] && !loadingImages[imageId]) {
+          dispatch(fetchImageBase64(imageId));
+        }
+      });
+    }
+  }, [images, base64Images, loadingImages, dispatch]);
+
   // Sincronizar con las imágenes que vienen por props
   useEffect(() => {
-    const loadImages = async () => {
-      if (images && images.length > 0) {
-        // Cargar imágenes existentes en base64
-        const formattedImages = await Promise.all(
-          images.map(async (img) => {
-            const imageId = img.imageId || img.id;
-            let url = img.url;
-            
-            // Si no hay URL y hay imageId, cargar con getImageBase64
-            if (!url && imageId && !img.isNew) {
-              try {
-                const base64 = await imagesAPI.getImageBase64(imageId);
-                url = `data:image/jpeg;base64,${base64}`;
-              } catch (e) {
-                // Fallback a URL directa si falla
-                url = imagesAPI.getImageUrl(imageId);
-              }
-            }
-            
-            return {
-              id: imageId,
-              url: url || imagesAPI.getImageUrl(imageId),
-              isMain: img.isMain || false,
-              isNew: img.isNew || false,
-              file: img.file // Solo existirá en imágenes nuevas
-            };
-          })
-        );
-        setPreviewImages(formattedImages);
-      } else {
-        setPreviewImages([]);
-      }
-    };
-
-    loadImages();
-  }, [images]);
+    if (images && images.length > 0) {
+      // Formatear imágenes usando el estado de Redux
+      const formattedImages = images.map((img) => {
+        const imageId = img.imageId || img.id;
+        let url = img.url;
+        
+        // Si no hay URL y hay imageId, usar base64 del estado
+        if (!url && imageId && !img.isNew) {
+          if (base64Images[imageId]) {
+            url = `data:image/jpeg;base64,${base64Images[imageId]}`;
+          } else {
+            url = imagesAPI.getImageUrl(imageId);
+          }
+        }
+        
+        return {
+          id: imageId,
+          url: url || imagesAPI.getImageUrl(imageId),
+          isMain: img.isMain || false,
+          isNew: img.isNew || false,
+          file: img.file // Solo existirá en imágenes nuevas
+        };
+      });
+      setPreviewImages(formattedImages);
+    } else {
+      setPreviewImages([]);
+    }
+  }, [images, base64Images]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);

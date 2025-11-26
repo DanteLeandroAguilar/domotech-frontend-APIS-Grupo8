@@ -8,7 +8,7 @@ import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
 import { fetchProductById } from '../store/slices/productsSlice';
 import { updateProductAmount } from '../store/slices/cartSlice';
-import { imagesAPI } from '../api/endpoints/images';
+import { fetchImagesByProduct } from '../store/slices/imagesSlice';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
 
@@ -19,23 +19,15 @@ const ProductDetail = () => {
   const { currentProduct, loading } = useSelector((state) => state.products);
   const { cart, updating } = useSelector((state) => state.cart);
   const { isAuthenticated, isSeller } = useSelector((state) => state.auth);
+  const { imagesByProduct } = useSelector((state) => state.images);
   
-  const [images, setImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
+  const images = imagesByProduct[id] || [];
 
   useEffect(() => {
     dispatch(fetchProductById(id));
-    loadImages();
+    dispatch(fetchImagesByProduct(id));
   }, [id, dispatch]);
-
-  const loadImages = async () => {
-    try {
-      const data = await imagesAPI.getByProduct(id);
-      setImages(data);
-    } catch (error) {
-      console.error('Error al cargar imágenes:', error);
-    }
-  };
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {

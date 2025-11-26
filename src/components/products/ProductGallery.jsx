@@ -1,43 +1,34 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { imagesAPI } from '../../api/endpoints/images';
+import { fetchImageBase64 } from '../../store/slices/imagesSlice';
 
 export const ProductGallery = ({ images = [] }) => {
+  const dispatch = useDispatch();
+  const { base64Images, loadingImages } = useSelector((state) => state.images);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [base64Urls, setBase64Urls] = useState([]);
 
-  // Cargar imágenes en base64
+  // Cargar imágenes que no estén en el estado
   useEffect(() => {
     if (!images || images.length === 0) return;
 
-    let isCancelled = false;
-
-    const loadImages = async () => {
-      try {
-        const urls = await Promise.all(
-          images.map(async (image) => {
-            try {
-              const base64 = await imagesAPI.getImageBase64(image.imageId);
-              return `data:image/jpeg;base64,${base64}`;
-            } catch (e) {
-              // Fallback a URL directa si falla
-              return imagesAPI.getImageUrl(image.imageId);
-            }
-          })
-        );
-        if (!isCancelled) {
-          setBase64Urls(urls);
-        }
-      } catch (e) {
-        // En caso de error, dejamos que se usen las URLs directas
+    images.forEach((image) => {
+      const imageId = image.imageId;
+      // Solo cargar si no está en el estado y no está cargando
+      if (imageId && !base64Images[imageId] && !loadingImages[imageId]) {
+        dispatch(fetchImageBase64(imageId));
       }
-    };
+    });
+  }, [images, base64Images, loadingImages, dispatch]);
 
-    loadImages();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [images]);
+  // Generar URLs desde el estado
+  const base64Urls = images.map((image) => {
+    const imageId = image.imageId;
+    if (base64Images[imageId]) {
+      return `data:image/jpeg;base64,${base64Images[imageId]}`;
+    }
+    return imagesAPI.getImageUrl(imageId);
+  });
 
   if (!images || images.length === 0) {
     return (

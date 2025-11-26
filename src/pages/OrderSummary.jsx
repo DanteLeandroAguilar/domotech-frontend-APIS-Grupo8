@@ -1,61 +1,69 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { Loading } from '../components/common/Loading';
 import { imagesAPI } from '../api/endpoints/images';
+import { fetchPrincipalImage, fetchImageBase64 } from '../store/slices/imagesSlice';
 
 const OrderSummary = () => {
+  const dispatch = useDispatch();
   const { currentOrder, confirming, error } = useSelector((state) => state.orders);
   const { token } = useSelector((state) => state.auth);
-  const [productImages, setProductImages] = useState({});
+  const { principalImages, base64Images, loadingImages } = useSelector((state) => state.images);
 
-  // Función para cargar imágenes de productos
-  const loadOrderProductImages = useCallback(async () => {
+  // Cargar imágenes principales y base64 que no estén en el estado
+  useEffect(() => {
     if (!token || !currentOrder || !currentOrder.details) return;
     
-    try {
-      const images = {};
-      
-      // Recopilar todos los productIds únicos de la orden
-      const productIds = new Set();
-      currentOrder.details.forEach(detail => {
-        productIds.add(detail.productId);
-      });
+    const productIds = new Set();
+    currentOrder.details.forEach(detail => {
+      productIds.add(detail.productId);
+    });
 
-      // Cargar imágenes principales directamente usando imagesAPI.getPrincipal
-      await Promise.all(
-        Array.from(productIds).map(async (productId) => {
-          try {
-            // Obtener imagen principal directamente por productId
-            const principal = await imagesAPI.getPrincipal(productId);
-            const imageId = principal?.imageId;
-            
-            if (imageId) {
-              const base64 = await imagesAPI.getImageBase64(imageId);
-              images[productId] = `data:image/jpeg;base64,${base64}`;
-            }
-          } catch (error) {
-            console.error(`Error al cargar imagen del producto ${productId}:`, error);
-          }
-        })
-      );
-      
-      setProductImages(images);
-    } catch (error) {
-      console.error('Error al cargar imágenes de productos:', error);
-    }
-  }, [currentOrder, token]);
+    // Cargar imágenes principales que no estén en el estado
+    Array.from(productIds).forEach((productId) => {
+      if (!principalImages[productId]) {
+        dispatch(fetchPrincipalImage(productId));
+      }
+    });
+  }, [currentOrder, token, principalImages, dispatch]);
 
-  // Cargar imágenes cuando hay una orden
+  // Cargar base64 de las imágenes principales
   useEffect(() => {
-    if (currentOrder && currentOrder.details && currentOrder.details.length > 0) {
-      loadOrderProductImages();
-    }
-  }, [currentOrder, loadOrderProductImages]);
+    if (!currentOrder || !currentOrder.details) return;
+    
+    const productIds = new Set();
+    currentOrder.details.forEach(detail => {
+      productIds.add(detail.productId);
+    });
+
+    Array.from(productIds).forEach((productId) => {
+      const principal = principalImages[productId];
+      const imageId = principal?.imageId;
+      
+      if (imageId && !base64Images[imageId] && !loadingImages[imageId]) {
+        dispatch(fetchImageBase64(imageId));
+      }
+    });
+  }, [currentOrder, principalImages, base64Images, loadingImages, dispatch]);
+
+  // Calcular URLs de imágenes desde el estado
+  const productImages = {};
+  if (currentOrder?.details) {
+    currentOrder.details.forEach(detail => {
+      const principal = principalImages[detail.productId];
+      const imageId = principal?.imageId;
+      
+      if (imageId && base64Images[imageId]) {
+        productImages[detail.productId] = `data:image/jpeg;base64,${base64Images[imageId]}`;
+      }
+    });
+  }
+
 
   // Mostrar loading solo si se está confirmando la orden
   if (confirming) {

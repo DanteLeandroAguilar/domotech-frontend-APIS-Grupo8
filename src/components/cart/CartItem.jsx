@@ -3,39 +3,38 @@ import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount } from '../../store/slices/cartSlice';
+import { fetchPrincipalImage, fetchImageBase64 } from '../../store/slices/imagesSlice';
 
 export const CartItem = ({ item }) => {
   const dispatch = useDispatch();
   const { updating } = useSelector((state) => state.cart);
+  const { principalImages, base64Images, loadingImages } = useSelector((state) => state.images);
 
-  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/100x100?text=Producto');
+  // Obtener imageId
+  let imageId = item.product?.principalImage?.imageId;
+  const principalImage = item.productId ? principalImages[item.productId] : null;
+  if (!imageId && principalImage) {
+    imageId = principalImage.imageId;
+  }
 
+  // Cargar imagen principal si no está en el estado
   useEffect(() => {
-    const loadImage = async () => {
-      let imageId = item.product?.principalImage?.imageId;
-      // Si el item del carrito no trae el objeto product, pedimos la imagen principal por productId
-      if (!imageId && item.productId) {
-        try {
-          const principal = await imagesAPI.getPrincipal(item.productId);
-          imageId = principal?.imageId;
-        } catch (e) {
-          imageId = null;
-        }
-      }
-      if (!imageId) {
-        setImageUrl('https://via.placeholder.com/100x100?text=Producto');
-        return;
-      }
-      try {
-        const base64 = await imagesAPI.getImageBase64(imageId);
-        setImageUrl(`data:image/jpeg;base64,${base64}`);
-      } catch (e) {
-        // Fallback a URL directa si falla
-        setImageUrl(imagesAPI.getImageUrl(imageId));
-      }
-    };
-    loadImage();
-  }, [item.product?.principalImage?.imageId, item.productId]);
+    if (!imageId && item.productId && !principalImage) {
+      dispatch(fetchPrincipalImage(item.productId));
+    }
+  }, [item.productId, principalImage, dispatch]);
+
+  // Cargar base64 si no está en el estado
+  useEffect(() => {
+    if (imageId && !base64Images[imageId] && !loadingImages[imageId]) {
+      dispatch(fetchImageBase64(imageId));
+    }
+  }, [imageId, base64Images, loadingImages, dispatch]);
+
+  // Calcular URL de imagen
+  const imageUrl = imageId && base64Images[imageId]
+    ? `data:image/jpeg;base64,${base64Images[imageId]}`
+    : (imageId ? imagesAPI.getImageUrl(imageId) : 'https://via.placeholder.com/100x100?text=Producto');
 
   const handleIncrease = async () => {
     await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount + 1 }));

@@ -1,40 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
+import { fetchImageBase64 } from '../../store/slices/imagesSlice';
 
 export const ProductTable = ({ products, onEdit, onDelete }) => {
-  const [productImages, setProductImages] = useState({});
+  const dispatch = useDispatch();
+  const { base64Images } = useSelector((state) => state.images);
+
+  const { loadingImages } = useSelector((state) => state.images);
 
   // Cargar imágenes en base64 para todos los productos
   useEffect(() => {
-    const loadImages = async () => {
-      if (!products || products.length === 0) return;
+    if (!products || products.length === 0) return;
 
-      const images = {};
-      const imagePromises = [];
-
-      products.forEach((product) => {
-        const mainImage = product.principalImage || product.images?.[0];
-        if (mainImage?.imageId) {
-          imagePromises.push(
-            imagesAPI.getImageBase64(mainImage.imageId)
-              .then(base64 => {
-                images[mainImage.imageId] = `data:image/jpeg;base64,${base64}`;
-              })
-              .catch(() => {
-                // Fallback a URL directa si falla
-                images[mainImage.imageId] = imagesAPI.getImageUrl(mainImage.imageId);
-              })
-          );
-        }
-      });
-
-      await Promise.all(imagePromises);
-      setProductImages(images);
-    };
-
-    loadImages();
-  }, [products]);
+    products.forEach((product) => {
+      const mainImage = product.principalImage || product.images?.[0];
+      const imageId = mainImage?.imageId;
+      // Solo cargar si no está en el estado y no está cargando
+      if (imageId && !base64Images[imageId] && !loadingImages[imageId]) {
+        dispatch(fetchImageBase64(imageId));
+      }
+    });
+  }, [products, base64Images, loadingImages, dispatch]);
 
   if (!products || products.length === 0) {
     return (
@@ -72,7 +60,7 @@ export const ProductTable = ({ products, onEdit, onDelete }) => {
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                     {mainImage ? (
                       <img
-                        src={productImages[mainImage.imageId] || imagesAPI.getImageUrl(mainImage.imageId)}
+                        src={base64Images[mainImage.imageId] ? `data:image/jpeg;base64,${base64Images[mainImage.imageId]}` : imagesAPI.getImageUrl(mainImage.imageId)}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />

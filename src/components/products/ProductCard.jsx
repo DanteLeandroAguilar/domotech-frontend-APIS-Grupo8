@@ -4,32 +4,32 @@ import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount } from '../../store/slices/cartSlice';
+import { fetchImageBase64 } from '../../store/slices/imagesSlice';
 
 export const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const { cart, updating } = useSelector((state) => state.cart);
   const { isAuthenticated, isSeller } = useSelector((state) => state.auth);
+  const { base64Images } = useSelector((state) => state.images);
 
+  const imageId = product?.principalImage?.imageId;
+  const base64Image = imageId ? base64Images[imageId] : null;
+  const { loadingImages } = useSelector((state) => state.images);
+  const isLoading = imageId ? loadingImages[imageId] : false;
   
-  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/300x300?text=Sin+Imagen');
+  const imageUrl = base64Image 
+    ? `data:image/jpeg;base64,${base64Image}` 
+    : (imageId ? imagesAPI.getImageUrl(imageId) : 'https://via.placeholder.com/300x300?text=Sin+Imagen');
 
-  // Cargar imagen en base64
+  // Cargar imagen en base64 solo si no está en el estado y no está cargando
   useEffect(() => {
-    const loadImage = async () => {
-      if (!product?.principalImage?.imageId) {
-        setImageUrl('https://via.placeholder.com/300x300?text=Sin+Imagen');
-        return;
-      }
-      try {
-        const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
-        setImageUrl(`data:image/jpeg;base64,${base64}`);
-      } catch (e) {
-        // fallback se mantiene a la URL directa
-        setImageUrl(imagesAPI.getImageUrl(product.principalImage.imageId));
-      }
-    };
-    loadImage();
-  }, [product?.principalImage?.imageId]);
+    if (!imageId || base64Images[imageId] || isLoading) {
+      return;
+    }
+    
+    // Cargar desde el slice solo si no está ya en el estado ni cargando
+    dispatch(fetchImageBase64(imageId));
+  }, [imageId, base64Images, isLoading, dispatch]);
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);
   const finalPrice = calculateDiscountedPrice(product.price, product.discount);

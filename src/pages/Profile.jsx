@@ -4,12 +4,14 @@ import { Header } from '../components/common/Header';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { imagesAPI } from '../api/endpoints/images';
+import { fetchPrincipalImage, fetchImageBase64 } from '../store/slices/imagesSlice';
 import { toast } from 'react-toastify';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { orders, loading: loadingOrders, error: ordersError } = useSelector((state) => state.orders);
   const { user: userInfo, loading, error, isAuthenticated, token, isBuyer } = useSelector((state) => state.auth);
+  const { principalImages, base64Images, loadingImages } = useSelector((state) => state.images);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -50,61 +52,67 @@ const Profile = () => {
     }
   }, [activeTab, userInfo, dispatch, orders.length, loadingOrders, isBuyer]);
 
-  // Función para cargar imágenes de productos
-  const loadOrderProductImages = useCallback(async () => {
-    if (!token || orders.length === 0) return;
-    
-    try {
-      const images = {};
-      
-      // Recopilar todos los productIds únicos de todas las órdenes
-      const productIds = new Set();
-      orders.forEach(order => {
-        order.details?.forEach(detail => {
-          productIds.add(detail.productId);
-        });
-      });
-
-      // Cargar imágenes principales directamente usando imagesAPI.getPrincipal
-      await Promise.all(
-        Array.from(productIds).map(async (productId) => {
-          try {
-            // Obtener imagen principal directamente por productId
-            const principal = await imagesAPI.getPrincipal(productId);
-            const imageId = principal?.imageId;
-            
-            if (imageId) {
-              const base64 = await imagesAPI.getImageBase64(imageId);
-              images[productId] = `data:image/jpeg;base64,${base64}`;
-            }
-          } catch (error) {
-            console.error(`Error al cargar imagen del producto ${productId}:`, error);
-          }
-        })
-      );
-      
-      setProductImages(images);
-      productImagesRef.current = images;
-      imagesLoadedRef.current = true;
-    } catch (error) {
-      console.error('Error al cargar imágenes de productos:', error);
-    }
-  }, [orders, token]);
-
-  // Cargar imágenes solo cuando cambia a la pestaña de órdenes y hay órdenes nuevas (solo para compradores)
+  // Cargar imágenes principales que no estén en el estado
   useEffect(() => {
-    if (isBuyer && activeTab === 'orders' && orders.length > 0) {
-      // Si cambió el número de órdenes, resetear el flag y cargar imágenes
-      if (orders.length !== ordersLengthRef.current) {
-        imagesLoadedRef.current = false;
-        ordersLengthRef.current = orders.length;
+    if (!token || !isBuyer || activeTab !== 'orders' || orders.length === 0) return;
+    
+    const productIds = new Set();
+    orders.forEach(order => {
+      order.details?.forEach(detail => {
+        productIds.add(detail.productId);
+      });
+    });
+
+    // Cargar imágenes principales que no estén en el estado
+    Array.from(productIds).forEach((productId) => {
+      if (!principalImages[productId]) {
+        dispatch(fetchPrincipalImage(productId));
       }
+    });
+  }, [orders, token, isBuyer, activeTab, principalImages, dispatch]);
+
+  // Cargar base64 de las imágenes principales
+  useEffect(() => {
+    if (!token || !isBuyer || activeTab !== 'orders' || orders.length === 0) return;
+    
+    const productIds = new Set();
+    orders.forEach(order => {
+      order.details?.forEach(detail => {
+        productIds.add(detail.productId);
+      });
+    });
+
+    Array.from(productIds).forEach((productId) => {
+      const principal = principalImages[productId];
+      const imageId = principal?.imageId;
       
-      if (!imagesLoadedRef.current && token) {
-        loadOrderProductImages();
+      if (imageId && !base64Images[imageId] && !loadingImages[imageId]) {
+        dispatch(fetchImageBase64(imageId));
       }
-    }
-  }, [activeTab, orders.length, token, loadOrderProductImages, isBuyer]);
+    });
+  }, [orders, token, isBuyer, activeTab, principalImages, base64Images, loadingImages, dispatch]);
+
+  // Calcular URLs de imágenes desde el estado
+  useEffect(() => {
+    if (!isBuyer || activeTab !== 'orders' || orders.length === 0) return;
+    
+    const images = {};
+    orders.forEach(order => {
+      order.details?.forEach(detail => {
+        const principal = principalImages[detail.productId];
+        const imageId = principal?.imageId;
+        
+        if (imageId && base64Images[imageId]) {
+          images[detail.productId] = `data:image/jpeg;base64,${base64Images[imageId]}`;
+        }
+      });
+    });
+    
+    setProductImages(images);
+    productImagesRef.current = images;
+    imagesLoadedRef.current = Object.keys(images).length > 0;
+  }, [orders, principalImages, base64Images, isBuyer, activeTab]);
+
 
   // Limpiar imágenes cuando se cambia a la pestaña de perfil
   useEffect(() => {
