@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
 import { Header } from '../components/common/Header';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
-import { fetchProductById } from '../store/slices/productsSlice';
 import { imagesAPI } from '../api/endpoints/images';
 import { toast } from 'react-toastify';
 
@@ -67,19 +65,17 @@ const Profile = () => {
         });
       });
 
-      // Cargar imágenes de todos los productos usando Redux
+      // Cargar imágenes principales directamente usando imagesAPI.getPrincipal
       await Promise.all(
         Array.from(productIds).map(async (productId) => {
           try {
-            const result = await dispatch(fetchProductById(productId));
+            // Obtener imagen principal directamente por productId
+            const principal = await imagesAPI.getPrincipal(productId);
+            const imageId = principal?.imageId;
             
-            if (fetchProductById.fulfilled.match(result)) {
-              const product = result.payload;
-              
-              if (product.principalImage?.imageId) {
-                const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
+            if (imageId) {
+              const base64 = await imagesAPI.getImageBase64(imageId);
               images[productId] = `data:image/jpeg;base64,${base64}`;
-              }
             }
           } catch (error) {
             console.error(`Error al cargar imagen del producto ${productId}:`, error);
