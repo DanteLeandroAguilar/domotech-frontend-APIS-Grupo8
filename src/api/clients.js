@@ -56,9 +56,16 @@ axiosInstance.interceptors.response.use(
   (error) => {
     // Manejar error 401 (no autorizado)
     if (error.response?.status === 401) {
-      // El logout se manejará desde el componente que detecte el error
-      // Por ahora, redirigir al login
-      window.location.href = '/login';
+      // No redirigir si estamos en la página de login o register, o si es una ruta pública del backend
+      // Esto permite que el componente maneje el error y muestre el mensaje
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath === '/login' || currentPath === '/register';
+      const isPublicBackendRoute = error.config?.url && isPublicRoute(error.config.url);
+      
+      if (!isAuthPage && !isPublicBackendRoute) {
+        // Solo redirigir si no estamos en una página de autenticación
+        window.location.href = '/login';
+      }
     }
 
     // Rechazar con el error formateado

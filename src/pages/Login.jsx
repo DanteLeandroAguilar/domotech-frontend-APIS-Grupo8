@@ -34,12 +34,23 @@ const Login = () => {
       return;
     }
 
-    const result = await dispatch(login(formData));
-    if (login.fulfilled.match(result)) {
-      toast.success('Sesión iniciada');
-      navigate('/');
-    } else if (login.rejected.match(result)) {
-      toast.error(result.error?.message || 'Error al iniciar sesión');
+    try {
+      const result = await dispatch(login(formData));
+      if (login.fulfilled.match(result)) {
+        toast.success('Sesión iniciada');
+        // Pequeño delay para asegurar que el toast se muestre antes de navegar
+        setTimeout(() => {
+          navigate('/');
+        }, 100);
+      } else if (login.rejected.match(result)) {
+        // Mostrar el error del backend o un mensaje genérico
+        const errorMessage = result.error?.message || result.payload?.message || 'Error al iniciar sesión. Verifica tus credenciales.';
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      // Capturar cualquier error inesperado
+      const errorMessage = error?.message || 'Error inesperado al iniciar sesión';
+      toast.error(errorMessage);
     }
   };
 

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { CartItem } from '../components/cart/CartItem';
@@ -7,6 +8,7 @@ import { Loading } from '../components/common/Loading';
 import { clearCart as clearCartAction } from '../store/slices/cartSlice';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { cart, loading } = useSelector((state) => state.cart);
 
@@ -42,7 +44,7 @@ const Cart = () => {
               Agrega algunos productos para comenzar
             </p>
             <button 
-              onClick={() => window.location.href = '/catalog'}
+              onClick={() => navigate('/catalog')}
               className="inline-flex items-center gap-2 rounded-lg bg-primary py-3 px-6 text-base font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all"
             >
               <span>Ver Productos</span>
