@@ -5,7 +5,7 @@ import { Footer } from '../../components/common/Footer';
 import { ProductForm } from '../../components/admin/ProductForm';
 import { ProductTable } from '../../components/admin/ProductTable';
 import { Loading } from '../../components/common/Loading';
-import { fetchAllProducts, createProduct, updateProduct, deleteProduct } from '../../store/slices/productsSlice';
+import { fetchAllProducts, createProduct, updateProduct, deleteProduct, updateProductInList } from '../../store/slices/productsSlice';
 import { imagesAPI } from '../../api/endpoints/images';
 import { toast } from 'react-toastify';
 
@@ -56,6 +56,7 @@ const ProductManagement = () => {
       }
 
       // Procesar imágenes
+      let updatedProduct = null;
       if (images && images.length > 0) {
         // 1. Eliminar imágenes que ya no están (solo para edición)
         if (editingProduct && editingProduct.images) {
@@ -69,7 +70,12 @@ const ProductManagement = () => {
 
           for (const img of imagesToDelete) {
             try {
-              await imagesAPI.delete(img.imageId);
+              const response = await imagesAPI.delete(img.imageId);
+              // El backend retorna el producto actualizado
+              if (response && response.productId) {
+                updatedProduct = response;
+                dispatch(updateProductInList(response));
+              }
             } catch (error) {
               console.error('Error al eliminar imagen:', error);
             }
@@ -78,14 +84,20 @@ const ProductManagement = () => {
 
         // 2. Subir imágenes nuevas
         const newImages = images.filter(img => img.isNew);
-        const uploadedImages = [];
+        let productAfterUpload = null;
+        const existingImageIds = editingProduct?.images?.map(img => img.imageId) || [];
 
         for (const img of newImages) {
           try {
             const formDataImage = new FormData();
             formDataImage.append('file', img.file);
             const response = await imagesAPI.upload(productId, formDataImage);
-            uploadedImages.push(response);
+            // El backend retorna el producto actualizado
+            if (response && response.productId) {
+              productAfterUpload = response;
+              updatedProduct = response;
+              dispatch(updateProductInList(response));
+            }
           } catch (error) {
             console.error('Error al subir imagen:', error);
             toast.error('Error al subir una o más imágenes');
@@ -98,23 +110,41 @@ const ProductManagement = () => {
           try {
             let mainImageId = mainImage.imageId || mainImage.id;
             
-            if (mainImage.isNew) {
-              // Encontrar el ID de la imagen subida correspondiente
-              const uploadedIndex = newImages.findIndex(img => img.id === mainImage.id);
-              if (uploadedIndex !== -1 && uploadedImages[uploadedIndex]) {
-                mainImageId = uploadedImages[uploadedIndex].imageId || uploadedImages[uploadedIndex].id;
+            if (mainImage.isNew && productAfterUpload) {
+              // Si la imagen principal es nueva, buscar su imageId en el producto retornado
+              const productImages = productAfterUpload.images || [];
+              if (productImages.length > 0) {
+                // Obtener todas las imágenes nuevas del producto (que no estaban antes)
+                const newImagesInProduct = productImages.filter(
+                  img => !existingImageIds.includes(img.imageId)
+                );
+                
+                if (newImagesInProduct.length > 0) {
+                  // Si hay múltiples imágenes nuevas, usar el índice de la imagen principal
+                  // en el array de imágenes nuevas para encontrar su correspondiente
+                  const mainImageIndex = newImages.findIndex(img => img.id === mainImage.id);
+                  if (mainImageIndex !== -1 && newImagesInProduct[mainImageIndex]) {
+                    mainImageId = newImagesInProduct[mainImageIndex].imageId;
+                  } else {
+                    // Fallback: usar la primera imagen nueva si no se puede identificar
+                    mainImageId = newImagesInProduct[0]?.imageId;
+                  }
+                }
               }
             }
             
             if (mainImageId && !mainImageId.toString().startsWith('new-')) {
-              await imagesAPI.markAsPrincipal(mainImageId);
+              const response = await imagesAPI.markAsPrincipal(mainImageId);
+              // El backend retorna el producto actualizado
+              if (response && response.productId) {
+                updatedProduct = response;
+                dispatch(updateProductInList(response));
+              }
             }
           } catch (error) {
             console.error('Error al marcar imagen principal:', error);
           }
         }
-        // Recargar productos después de crear/actualizar
-      dispatch(fetchAllProducts({ page: 0, size: 100 }));
       }
 
       toast.success(editingProduct ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
@@ -136,8 +166,7 @@ const ProductManagement = () => {
     const result = await dispatch(deleteProduct(productId));
     if (deleteProduct.fulfilled.match(result)) {
       toast.success('Producto eliminado correctamente');
-      // Recargar productos después de eliminar
-      dispatch(fetchAllProducts({ page: 0, size: 100 }));
+      // No es necesario recargar, el slice ya actualiza el estado
     } else if (deleteProduct.rejected.match(result)) {
       toast.error(result.error?.message || 'Error al eliminar producto');
     }
