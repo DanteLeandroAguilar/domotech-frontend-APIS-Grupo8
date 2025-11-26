@@ -1,46 +1,41 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { imagesAPI } from '../../api/endpoints/images';
-import { getTokenFromStore } from '../../store';
 
 export const ProductGallery = ({ images = [] }) => {
   const [selectedImage, setSelectedImage] = useState(0);
-  const [blobUrls, setBlobUrls] = useState([]);
+  const [base64Urls, setBase64Urls] = useState([]);
 
-  // Cargar blobs de imágenes protegidas y crear Object URLs
+  // Cargar imágenes en base64
   useEffect(() => {
     if (!images || images.length === 0) return;
 
     let isCancelled = false;
-    let createdUrls = [];
 
-    const loadBlobs = async () => {
+    const loadImages = async () => {
       try {
-        const token = getTokenFromStore();
         const urls = await Promise.all(
           images.map(async (image) => {
-            const url = imagesAPI.getImageUrl(image.imageId);
-            const response = await axios.get(url, {
-              headers: token ? { Authorization: `Bearer ${token}` } : {},
-              responseType: 'blob',
-            });
-            return URL.createObjectURL(response.data);
+            try {
+              const base64 = await imagesAPI.getImageBase64(image.imageId);
+              return `data:image/jpeg;base64,${base64}`;
+            } catch (e) {
+              // Fallback a URL directa si falla
+              return imagesAPI.getImageUrl(image.imageId);
+            }
           })
         );
-        createdUrls = urls;
         if (!isCancelled) {
-          setBlobUrls(urls);
+          setBase64Urls(urls);
         }
       } catch (e) {
         // En caso de error, dejamos que se usen las URLs directas
       }
     };
 
-    loadBlobs();
+    loadImages();
 
     return () => {
       isCancelled = true;
-      createdUrls.forEach((u) => URL.revokeObjectURL(u));
     };
   }, [images]);
 
@@ -53,7 +48,7 @@ export const ProductGallery = ({ images = [] }) => {
   }
 
   const mainImage = images[selectedImage];
-  const mainImageUrl = blobUrls[selectedImage] || imagesAPI.getImageUrl(mainImage.imageId);
+  const mainImageUrl = base64Urls[selectedImage] || imagesAPI.getImageUrl(mainImage.imageId);
 
   return (
     <div className="space-y-4">
@@ -80,7 +75,7 @@ export const ProductGallery = ({ images = [] }) => {
               }`}
             >
               <img
-                src={blobUrls[index] || imagesAPI.getImageUrl(image.imageId)}
+                src={base64Urls[index] || imagesAPI.getImageUrl(image.imageId)}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
               />

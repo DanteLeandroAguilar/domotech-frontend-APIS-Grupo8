@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
-import { getTokenFromStore } from '../../store';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount } from '../../store/slices/cartSlice';
@@ -13,8 +11,7 @@ export const CartItem = ({ item }) => {
   const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/100x100?text=Producto');
 
   useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
+    const loadImage = async () => {
       let imageId = item.product?.principalImage?.imageId;
       // Si el item del carrito no trae el objeto product, pedimos la imagen principal por productId
       if (!imageId && item.productId) {
@@ -30,24 +27,15 @@ export const CartItem = ({ item }) => {
         return;
       }
       try {
-        const token = getTokenFromStore();
-        const url = imagesAPI.getImageUrl(imageId);
-        const response = await axios.get(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          responseType: 'blob',
-        });
-        createdUrl = URL.createObjectURL(response.data);
-        setImageUrl(createdUrl);
+        const base64 = await imagesAPI.getImageBase64(imageId);
+        setImageUrl(`data:image/jpeg;base64,${base64}`);
       } catch (e) {
-        // Fallback a URL directa si el blob falla
+        // Fallback a URL directa si falla
         setImageUrl(imagesAPI.getImageUrl(imageId));
       }
     };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
-  }, [item.product?.principalImage?.imageId]);
+    loadImage();
+  }, [item.product?.principalImage?.imageId, item.productId]);
 
   const handleIncrease = async () => {
     await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount + 1 }));

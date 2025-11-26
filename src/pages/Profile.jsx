@@ -77,13 +77,8 @@ const Profile = () => {
               const product = result.payload;
               
               if (product.principalImage?.imageId) {
-                const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
-                
-                const response = await axios.get(imageUrl, {
-                  headers: { Authorization: `Bearer ${token}` },
-                  responseType: 'blob',
-                });
-                images[productId] = URL.createObjectURL(response.data);
+                const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
+              images[productId] = `data:image/jpeg;base64,${base64}`;
               }
             }
           } catch (error) {

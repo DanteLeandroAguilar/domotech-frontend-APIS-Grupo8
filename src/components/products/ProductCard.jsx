@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount, fetchCart } from '../../store/slices/cartSlice';
-import { getTokenFromStore } from '../../store';
 
 export const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
@@ -19,34 +17,24 @@ export const ProductCard = ({ product }) => {
     }
   }, [isAuthenticated, cart, dispatch]);
 
-  const [imageUrl, setImageUrl] = useState(
-    product.principalImage 
-      ? imagesAPI.getImageUrl(product.principalImage.imageId)
-      : 'https://via.placeholder.com/300x300?text=Sin+Imagen'
-  );
+  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/300x300?text=Sin+Imagen');
 
-  // Si las imágenes requieren auth y vienen como blob, creamos un Object URL
+  // Cargar imagen en base64
   useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
-      if (!product?.principalImage?.imageId) return;
+    const loadImage = async () => {
+      if (!product?.principalImage?.imageId) {
+        setImageUrl('https://via.placeholder.com/300x300?text=Sin+Imagen');
+        return;
+      }
       try {
-        const token = getTokenFromStore();
-        const url = imagesAPI.getImageUrl(product.principalImage.imageId);
-        const response = await axios.get(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          responseType: 'blob',
-        });
-        createdUrl = URL.createObjectURL(response.data);
-        setImageUrl(createdUrl);
+        const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
+        setImageUrl(`data:image/jpeg;base64,${base64}`);
       } catch (e) {
         // fallback se mantiene a la URL directa
+        setImageUrl(imagesAPI.getImageUrl(product.principalImage.imageId));
       }
     };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
+    loadImage();
   }, [product?.principalImage?.imageId]);
 
   const discountPercentage = calculateDiscountPercentage(product.price, product.discount);

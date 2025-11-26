@@ -1,13 +1,65 @@
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useState, useEffect, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { Loading } from '../components/common/Loading';
+import { fetchProductById } from '../store/slices/productsSlice';
+import { imagesAPI } from '../api/endpoints/images';
 
 const OrderSummary = () => {
+  const dispatch = useDispatch();
   const { currentOrder, confirming, error } = useSelector((state) => state.orders);
+  const { token } = useSelector((state) => state.auth);
+  const [productImages, setProductImages] = useState({});
+
+  // Función para cargar imágenes de productos
+  const loadOrderProductImages = useCallback(async () => {
+    if (!token || !currentOrder || !currentOrder.details) return;
+    
+    try {
+      const images = {};
+      
+      // Recopilar todos los productIds únicos de la orden
+      const productIds = new Set();
+      currentOrder.details.forEach(detail => {
+        productIds.add(detail.productId);
+      });
+
+      // Cargar imágenes de todos los productos usando Redux
+      await Promise.all(
+        Array.from(productIds).map(async (productId) => {
+          try {
+            const result = await dispatch(fetchProductById(productId));
+            
+            if (fetchProductById.fulfilled.match(result)) {
+              const product = result.payload;
+              
+              if (product.principalImage?.imageId) {
+                const base64 = await imagesAPI.getImageBase64(product.principalImage.imageId);
+                images[productId] = `data:image/jpeg;base64,${base64}`;
+              }
+            }
+          } catch (error) {
+            console.error(`Error al cargar imagen del producto ${productId}:`, error);
+          }
+        })
+      );
+      
+      setProductImages(images);
+    } catch (error) {
+      console.error('Error al cargar imágenes de productos:', error);
+    }
+  }, [currentOrder, token, dispatch]);
+
+  // Cargar imágenes cuando hay una orden
+  useEffect(() => {
+    if (currentOrder && currentOrder.details && currentOrder.details.length > 0) {
+      loadOrderProductImages();
+    }
+  }, [currentOrder, loadOrderProductImages]);
 
   // Mostrar loading solo si se está confirmando la orden
   if (confirming) {
@@ -88,10 +140,20 @@ const OrderSummary = () => {
               <div className="p-4 sm:p-6 space-y-4">
                 {currentOrder.details?.map((detail, index) => (
                   <div key={detail.id || index} className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-gray-400">
-                        package_2
-                      </span>
+                    <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                      {productImages[detail.productId] ? (
+                        <img
+                          src={productImages[detail.productId]}
+                          alt={detail.productName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="material-symbols-outlined text-gray-400">
+                            package_2
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex-grow">
                       <p className="font-medium text-gray-900 dark:text-white">
