@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Header } from '../components/common/Header';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
-import { productsAPI } from '../api/endpoints/products';
+import { fetchProductById } from '../store/slices/productsSlice';
 import { imagesAPI } from '../api/endpoints/images';
 import { toast } from 'react-toastify';
 
@@ -67,20 +67,24 @@ const Profile = () => {
         });
       });
 
-      // Cargar imágenes de todos los productos
+      // Cargar imágenes de todos los productos usando Redux
       await Promise.all(
         Array.from(productIds).map(async (productId) => {
           try {
-            const product = await productsAPI.getById(productId);
+            const result = await dispatch(fetchProductById(productId));
             
-            if (product.principalImage?.imageId) {
-              const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
+            if (fetchProductById.fulfilled.match(result)) {
+              const product = result.payload;
               
-              const response = await axios.get(imageUrl, {
-                headers: { Authorization: `Bearer ${token}` },
-                responseType: 'blob',
-              });
-              images[productId] = URL.createObjectURL(response.data);
+              if (product.principalImage?.imageId) {
+                const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
+                
+                const response = await axios.get(imageUrl, {
+                  headers: { Authorization: `Bearer ${token}` },
+                  responseType: 'blob',
+                });
+                images[productId] = URL.createObjectURL(response.data);
+              }
             }
           } catch (error) {
             console.error(`Error al cargar imagen del producto ${productId}:`, error);
