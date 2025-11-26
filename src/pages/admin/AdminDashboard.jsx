@@ -97,21 +97,12 @@ const AdminDashboard = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Total
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Acciones
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-              {loading ? (
+              {orders.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    Cargando pedidos...
-                  </td>
-                </tr>
-              ) : orders.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                     No hay pedidos
                   </td>
                 </tr>
@@ -128,31 +119,23 @@ const AdminDashboard = () => {
                       {new Date(order.orderDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.orderStatus)}`}>
-                        {order.orderStatus}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={order.orderStatus}
+                          onChange={(e) => handleStatusChange(order.orderId, e.target.value)}
+                          disabled={updatingOrderId === order.orderId}
+                          className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${getStatusColor(order.orderStatus)}`}
+                        >
+                          {orderStatuses.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       ${order.total.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <select
-                        value={order.orderStatus}
-                        onChange={(e) => handleStatusChange(order.orderId, e.target.value)}
-                        disabled={updatingOrderId === order.orderId}
-                        className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {orderStatuses.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
-                      {updatingOrderId === order.orderId && (
-                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                          Actualizando...
-                        </span>
-                      )}
                     </td>
                   </tr>
                 ))
