@@ -48,6 +48,11 @@ const AdminDashboard = () => {
     }
   };
 
+  // Ordenar órdenes por orderId descendente (más recientes primero)
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => b.orderId - a.orderId);
+  }, [orders]);
+
   // Estados disponibles
   const orderStatuses = ['PENDING', 'CONFIRMED', 'DELIVERED', 'CANCELED'];
 
@@ -100,14 +105,14 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-              {orders.length === 0 ? (
+              {sortedOrders.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                     No hay pedidos
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
+                sortedOrders.map((order) => (
                   <tr key={order.orderId}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       #{order.orderId}
