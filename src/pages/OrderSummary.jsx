@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { formatPrice, formatDate } from '../utils/formatters';
+import { formatPrice, formatDate, getStatusText, getStatusColor } from '../utils/formatters';
 import { Loading } from '../components/common/Loading';
 import { imagesAPI } from '../api/endpoints/images';
 
@@ -204,8 +204,8 @@ const OrderSummary = () => {
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-gray-400 mb-1">Estado</p>
-                  <p className="font-medium text-green-600 dark:text-green-400">
-                    {currentOrder.orderStatus}
+                  <p className={`font-medium ${getStatusColor(currentOrder.orderStatus)}`}>
+                    {getStatusText(currentOrder.orderStatus)}
                   </p>
                 </div>
               </div>
