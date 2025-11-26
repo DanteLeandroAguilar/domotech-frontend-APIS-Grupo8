@@ -5,6 +5,7 @@ import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
 import { Loading } from '../components/common/Loading';
 import { clearCart as clearCartAction } from '../store/slices/cartSlice';
+import { formatPrice } from '../utils/formatters';
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -78,34 +79,69 @@ const Cart = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                Carrito de Compras
-              </h1>
-              
-              <div className="space-y-6">
-                {Object.entries(groupedItems).map(([room, items]) => (
-                  <div key={room} className="space-y-4">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                      <span className="material-symbols-outlined text-lg align-middle mr-2">room</span>
-                      {room.charAt(0).toUpperCase() + room.slice(1)}
-                    </h2>
-                    {items.map((item) => (
-                      <CartItem key={item.id || `${item.productId}-${room}`} item={item} />
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              {/* Botón Vaciar Carrito */}
-              <div className="mt-6 flex justify-end">
+              <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Carrito de Compras
+                </h1>
                 <button 
                   onClick={handleClearCart}
-                  className="text-sm font-medium text-red-600 dark:text-red-500 hover:text-red-800 dark:hover:text-red-400 transition-colors"
+                  className="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-500 hover:text-red-800 dark:hover:text-red-400 transition-colors px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
+                  <span className="material-symbols-outlined text-lg">delete_sweep</span>
                   Vaciar Carrito
                 </button>
+              </div>
+              
+              <div className="space-y-6">
+                {Object.entries(groupedItems).map(([room, items]) => {
+                  const roomTotal = items.reduce((sum, item) => {
+                    return sum + (item.finalPrice || (item.price * item.amount * (1 - (item.discount || 0) / 100)));
+                  }, 0);
+                  const roomItemCount = items.reduce((sum, item) => sum + item.amount, 0);
+                  
+                  return (
+                    <div 
+                      key={room} 
+                      className="rounded-xl bg-white dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden transition-all hover:shadow-xl"
+                    >
+                      {/* Encabezado de la habitación */}
+                      <div className="bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-b-2 border-primary/20 dark:border-primary/30 px-6 py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-primary/20 dark:bg-primary/30">
+                              <span className="material-symbols-outlined text-2xl text-primary dark:text-primary">
+                                {room === 'general' ? 'home' : 'room'}
+                              </span>
+                            </div>
+                            <div>
+                              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {room === 'general' ? 'Habitación General' : room.charAt(0).toUpperCase() + room.slice(1)}
+                              </h2>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {roomItemCount} {roomItemCount === 1 ? 'producto' : 'productos'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Subtotal</p>
+                            <p className="text-lg font-bold text-primary dark:text-primary">
+                              {formatPrice(roomTotal)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Lista de productos de la habitación */}
+                      <div className="p-4 space-y-3">
+                        {items.map((item) => (
+                          <CartItem key={item.id || `${item.productId}-${room}`} item={item} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

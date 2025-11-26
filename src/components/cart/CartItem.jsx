@@ -59,25 +59,22 @@ export const CartItem = ({ item }) => {
   const subtotal = item.finalPrice || (unitFinalPrice * item.amount);
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800">
+    <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
       {/* Imagen */}
-      <img
-        src={imageUrl}
-        alt={item.productName}
-        className="w-20 h-20 object-cover rounded"
-      />
+      <div className="flex-shrink-0">
+        <img
+          src={imageUrl}
+          alt={item.productName}
+          className="w-20 h-20 object-cover rounded-lg shadow-md"
+        />
+      </div>
 
       {/* Información del producto */}
-      <div className="flex-grow">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-bold text-gray-900 dark:text-white">
-            {item.productName}
-          </h3>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-            {room.charAt(0).toUpperCase() + room.slice(1)}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex-grow min-w-0">
+        <h3 className="font-bold text-gray-900 dark:text-white mb-1 truncate">
+          {item.productName}
+        </h3>
+        <div className="flex items-center gap-2 flex-wrap">
           {discount > 0 ? (
             <>
               <p className="text-sm text-gray-400 dark:text-gray-500 line-through">
@@ -86,47 +83,56 @@ export const CartItem = ({ item }) => {
               <p className="text-sm font-semibold text-green-600 dark:text-green-400">
                 {formatPrice(unitFinalPrice)}
               </p>
-              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded">
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
                 {discount}% OFF
               </span>
             </>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               {formatPrice(item.price)}
             </p>
           )}
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            c/u
+          </span>
         </div>
       </div>
 
       {/* Controles de cantidad */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 px-2 py-1">
         <button
           onClick={handleDecrease}
           disabled={updating || item.amount <= 1}
-          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Disminuir cantidad"
         >
           <span className="material-symbols-outlined text-lg">remove</span>
         </button>
-        <span className="w-8 text-center font-medium">{item.amount}</span>
+        <span className="w-8 text-center font-semibold text-gray-900 dark:text-white">{item.amount}</span>
         <button
           onClick={handleIncrease}
           disabled={updating}
-          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50"
+          className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
+          aria-label="Aumentar cantidad"
         >
           <span className="material-symbols-outlined text-lg">add</span>
         </button>
       </div>
 
       {/* Subtotal */}
-      <p className="w-24 text-right font-semibold text-gray-900 dark:text-white">
-        {formatPrice(subtotal)}
-      </p>
+      <div className="text-right min-w-[100px]">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Subtotal</p>
+        <p className="text-lg font-bold text-gray-900 dark:text-white">
+          {formatPrice(subtotal)}
+        </p>
+      </div>
 
       {/* Botón eliminar */}
       <button
         onClick={handleRemove}
         disabled={updating}
-        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+        className="flex-shrink-0 p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+        aria-label="Eliminar producto"
       >
         <span className="material-symbols-outlined">delete</span>
       </button>
