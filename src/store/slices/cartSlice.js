@@ -22,8 +22,8 @@ export const fetchCart = createAsyncThunk(
 // Thunk para actualizar cantidad de producto en carrito
 export const updateProductAmount = createAsyncThunk(
   'cart/updateProductAmount',
-  async ({ productId, amount }) => {
-    const response = await cartAPI.updateProductAmount(productId, amount);
+  async ({ productId, amount, room = 'general' }) => {
+    const response = await cartAPI.updateProductAmount(productId, amount, room);
     return response;
   }
 );
@@ -43,7 +43,8 @@ export const clearCart = createAsyncThunk(
     // Usar la última respuesta que será el carrito vacío
     let lastResponse = null;
     for (const item of items) {
-      lastResponse = await cartAPI.updateProductAmount(item.productId, 0);
+      const room = item.room || 'general';
+      lastResponse = await cartAPI.updateProductAmount(item.productId, 0, room);
     }
     
     // Retornar la última respuesta (carrito actualizado y vacío)

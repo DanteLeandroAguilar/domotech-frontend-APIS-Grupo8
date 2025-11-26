@@ -8,8 +8,9 @@ export const cartAPI = {
   },
 
   // PATCH /carts/update-product - Actualizar cantidad de producto en carrito
-  updateProductAmount: async (productId, amount) => {
-    const response = await api.patch(`/carts/update-product?idProduct=${productId}&amount=${amount}`);
+  updateProductAmount: async (productId, amount, room = 'general') => {
+    const roomParam = room ? `&room=${encodeURIComponent(room)}` : '';
+    const response = await api.patch(`/carts/update-product?idProduct=${productId}&amount=${amount}${roomParam}`);
     return response;
   },
 

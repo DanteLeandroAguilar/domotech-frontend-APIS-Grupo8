@@ -4,7 +4,9 @@ import { Header } from '../components/common/Header';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { imagesAPI } from '../api/endpoints/images';
+import { roomsAPI } from '../api/endpoints/rooms';
 import { toast } from 'react-toastify';
+import { getStatusText, getStatusBadgeColor } from '../utils/formatters';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -18,18 +20,29 @@ const Profile = () => {
     lastName: '',
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' o 'orders'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'orders' o 'rooms'
   const [productImages, setProductImages] = useState({});
   const imagesLoadedRef = useRef(false);
   const ordersLengthRef = useRef(0);
   const productImagesRef = useRef({});
+  const [rooms, setRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState(null);
+  const [editingRoomName, setEditingRoomName] = useState('');
 
-  // Asegurar que los vendedores no puedan acceder al tab de pedidos
+  // Asegurar que los vendedores no puedan acceder al tab de pedidos o habitaciones
   useEffect(() => {
-    if (!isBuyer && activeTab === 'orders') {
+    if (!isBuyer && (activeTab === 'orders' || activeTab === 'rooms')) {
       setActiveTab('profile');
     }
   }, [activeTab, isBuyer]);
+
+  // Cargar habitaciones cuando se cambia al tab de habitaciones
+  useEffect(() => {
+    if (isBuyer && activeTab === 'rooms' && isAuthenticated) {
+      loadRooms();
+    }
+  }, [activeTab, isBuyer, isAuthenticated]);
 
   // Inicializar formData solo cuando se carga el usuario por primera vez y no está editando
   useEffect(() => {
@@ -149,24 +162,78 @@ const Profile = () => {
     return `${discount}%`;
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      DELIVERED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      CANCELED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+  const loadRooms = async () => {
+    try {
+      setLoadingRooms(true);
+      const roomsData = await roomsAPI.getUserRooms();
+      setRooms(roomsData);
+    } catch (error) {
+      console.error('Error al cargar habitaciones:', error);
+      toast.error('Error al cargar las habitaciones');
+    } finally {
+      setLoadingRooms(false);
+    }
   };
 
-  const getStatusText = (status) => {
-    const texts = {
-      PENDING: 'Pendiente',
-      CONFIRMED: 'Confirmado',
-      DELIVERED: 'Entregado',
-      CANCELED: 'Cancelado',
-    };
-    return texts[status] || status;
+  const handleCreateRoom = async () => {
+    const trimmedName = editingRoomName.trim();
+    if (!trimmedName) {
+      toast.error('El nombre de la habitación no puede estar vacío');
+      return;
+    }
+
+    try {
+      await roomsAPI.createRoom(trimmedName);
+      toast.success('Habitación creada correctamente');
+      setEditingRoomName('');
+      setEditingRoomId(null);
+      await loadRooms();
+    } catch (error) {
+      toast.error(error.message || 'Error al crear la habitación');
+    }
+  };
+
+  const handleUpdateRoom = async (roomId) => {
+    const trimmedName = editingRoomName.trim();
+    if (!trimmedName) {
+      toast.error('El nombre de la habitación no puede estar vacío');
+      return;
+    }
+
+    try {
+      await roomsAPI.updateRoom(roomId, trimmedName);
+      toast.success('Habitación actualizada correctamente');
+      setEditingRoomName('');
+      setEditingRoomId(null);
+      await loadRooms();
+    } catch (error) {
+      toast.error(error.message || 'Error al actualizar la habitación');
+    }
+  };
+
+  const handleDeleteRoom = async (roomId, roomName) => {
+    if (roomName.toLowerCase() === 'general') {
+      toast.error('No se puede eliminar la habitación "general"');
+      return;
+    }
+
+    try {
+      await roomsAPI.deleteRoom(roomId);
+      toast.success('Habitación eliminada correctamente');
+      await loadRooms();
+    } catch (error) {
+      toast.error(error.message || 'Error al eliminar la habitación');
+    }
+  };
+
+  const startEditing = (room) => {
+    setEditingRoomId(room.roomId);
+    setEditingRoomName(room.name);
+  };
+
+  const cancelEditing = () => {
+    setEditingRoomId(null);
+    setEditingRoomName('');
   };
 
   // Ordenar órdenes por orderId descendente (más recientes primero)
@@ -257,16 +324,28 @@ const Profile = () => {
                 Perfil
               </button>
               {isBuyer && (
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
-                    activeTab === 'orders'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Pedidos
-                </button>
+                <>
+                  <button
+                    onClick={() => setActiveTab('orders')}
+                    className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                      activeTab === 'orders'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Pedidos
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('rooms')}
+                    className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                      activeTab === 'rooms'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Habitaciones
+                  </button>
+                </>
               )}
             </nav>
           </div>
@@ -449,7 +528,7 @@ const Profile = () => {
                         </p>
                       </div>
                       <span
-                        className={`mt-2 md:mt-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        className={`mt-2 md:mt-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
                           order.orderStatus
                         )}`}
                       >
@@ -484,9 +563,16 @@ const Profile = () => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1 min-w-0 pr-4">
-                                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                        {detail.productName}
-                                      </p>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                          {detail.productName}
+                                        </p>
+                                        {detail.room && (
+                                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                            {detail.room.charAt(0).toUpperCase() + detail.room.slice(1)}
+                                          </span>
+                                        )}
+                                      </div>
                                       <div className="mt-2 space-y-1">
                                         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                           <span>Cantidad: {detail.quantity}</span>
@@ -547,6 +633,166 @@ const Profile = () => {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          )}
+
+          {/* Rooms Tab Content */}
+          {activeTab === 'rooms' && isBuyer && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Gestión de Habitaciones
+                </h2>
+                {editingRoomId === null && (
+                  <button
+                    onClick={() => {
+                      setEditingRoomId('new');
+                      setEditingRoomName('');
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Nueva Habitación
+                  </button>
+                )}
+              </div>
+
+              {loadingRooms ? (
+                <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                  Cargando habitaciones...
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {/* Crear nueva habitación */}
+                  {editingRoomId === 'new' && (
+                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={editingRoomName}
+                          onChange={(e) => setEditingRoomName(e.target.value)}
+                          placeholder="Nombre de la habitación"
+                          maxLength={50}
+                          autoFocus
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleCreateRoom();
+                            } else if (e.key === 'Escape') {
+                              cancelEditing();
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={handleCreateRoom}
+                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lista de habitaciones */}
+                  <div className="space-y-2">
+                    {/* Habitación "general" (no editable) */}
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">
+                          room
+                        </span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          General
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          (Por defecto)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Habitaciones del usuario */}
+                    {rooms
+                      .filter(room => room.name.toLowerCase() !== 'general')
+                      .map((room) => (
+                        <div
+                          key={room.roomId}
+                          className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+                        >
+                          {editingRoomId === room.roomId ? (
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={editingRoomName}
+                                onChange={(e) => setEditingRoomName(e.target.value)}
+                                maxLength={50}
+                                autoFocus
+                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleUpdateRoom(room.roomId);
+                                  } else if (e.key === 'Escape') {
+                                    cancelEditing();
+                                  }
+                                }}
+                              />
+                              <button
+                                onClick={() => handleUpdateRoom(room.roomId)}
+                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                              >
+                                Guardar
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">
+                                  room
+                                </span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                  {room.name.charAt(0).toUpperCase() + room.name.slice(1)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => startEditing(room)}
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
+                                  title="Editar"
+                                >
+                                  <span className="material-symbols-outlined text-sm">edit</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteRoom(room.roomId, room.name)}
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
+                                  title="Eliminar"
+                                >
+                                  <span className="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+
+                  {rooms.length === 0 && editingRoomId !== 'new' && (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      No tienes habitaciones personalizadas. Crea una nueva para organizar tus productos.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}

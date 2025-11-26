@@ -5,6 +5,7 @@ import { Footer } from '../../components/common/Footer';
 import { Dashboard } from '../../components/admin/Dashboard';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/ordersSlice';
 import { fetchAllProducts } from '../../store/slices/productsSlice';
+import { getStatusBadgeColorSelect } from '../../utils/formatters';
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
@@ -55,16 +56,6 @@ const AdminDashboard = () => {
 
   // Estados disponibles
   const orderStatuses = ['PENDING', 'CONFIRMED', 'DELIVERED', 'CANCELED'];
-
-  const getStatusColor = (status) => {
-    const colors = {
-      PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
-      CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-      DELIVERED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-      CANCELED: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-    };
-    return colors[status] || colors.PENDING;
-  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -129,7 +120,7 @@ const AdminDashboard = () => {
                           value={order.orderStatus}
                           onChange={(e) => handleStatusChange(order.orderId, e.target.value)}
                           disabled={updatingOrderId === order.orderId}
-                          className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${getStatusColor(order.orderStatus)}`}
+                          className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${getStatusBadgeColorSelect(order.orderStatus)}`}
                         >
                           {orderStatuses.map((status) => (
                             <option key={status} value={status}>
