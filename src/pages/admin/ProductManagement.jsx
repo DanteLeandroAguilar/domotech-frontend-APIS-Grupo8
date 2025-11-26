@@ -139,10 +139,6 @@ const ProductManagement = () => {
   };
 
   const handleDelete = async (productId) => {
-    if (!window.confirm('¿Estás seguro de eliminar este producto?')) {
-      return;
-    }
-
     const result = await dispatch(deleteProduct(productId));
     if (deleteProduct.fulfilled.match(result)) {
       toast.success('Producto eliminado correctamente');

@@ -11,7 +11,6 @@ const Cart = () => {
   const { cart, loading } = useSelector((state) => state.cart);
 
   const handleClearCart = async () => {
-    if (!window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) return;
     await dispatch(clearCartAction());
   };
 

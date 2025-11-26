@@ -47,10 +47,6 @@ const CategoryManagement = () => {
   };
 
   const handleDelete = async (categoryId) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta categoría?')) {
-      return;
-    }
-
     const result = await dispatch(deleteCategory(categoryId));
     if (deleteCategory.fulfilled.match(result)) {
       toast.success('Categoría eliminada correctamente');
