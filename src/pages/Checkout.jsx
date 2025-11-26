@@ -30,10 +30,6 @@ const Checkout = () => {
     paypalEmail: '',
   });
 
-  useEffect(() => {
-    dispatch(fetchCart());
-  }, [dispatch]);
-
   const getCartTotal = () => {
     if (!cart || !cart.items) return 0;
     // Usar finalPrice que ya viene calculado del backend

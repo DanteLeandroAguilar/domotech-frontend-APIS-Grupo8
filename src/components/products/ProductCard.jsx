@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
 import { updateProductAmount, fetchCart } from '../../store/slices/cartSlice';
@@ -32,11 +33,11 @@ export const ProductCard = ({ product }) => {
       try {
         const token = getTokenFromStore();
         const url = imagesAPI.getImageUrl(product.principalImage.imageId);
-        const response = await fetch(url, {
+        const response = await axios.get(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
+          responseType: 'blob',
         });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
+        createdUrl = URL.createObjectURL(response.data);
         setImageUrl(createdUrl);
       } catch (e) {
         // fallback se mantiene a la URL directa

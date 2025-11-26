@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
 import { getTokenFromStore } from '../../store';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
@@ -31,11 +32,11 @@ export const CartItem = ({ item }) => {
       try {
         const token = getTokenFromStore();
         const url = imagesAPI.getImageUrl(imageId);
-        const response = await fetch(url, {
+        const response = await axios.get(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
+          responseType: 'blob',
         });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
+        createdUrl = URL.createObjectURL(response.data);
         setImageUrl(createdUrl);
       } catch (e) {
         // Fallback a URL directa si el blob falla

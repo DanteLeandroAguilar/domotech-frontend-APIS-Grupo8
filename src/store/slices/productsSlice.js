@@ -198,8 +198,8 @@ const productsSlice = createSlice({
         state.error = null;
         state.products = Array.isArray(action.payload.content) ? action.payload.content : [];
         state.pagination = {
+          ...state.pagination,
           page: action.payload.page || state.pagination.page,
-          size: action.payload.size || state.pagination.size,
           totalPages: action.payload.totalPages || 0,
           totalElements: action.payload.totalElements || 0,
         };

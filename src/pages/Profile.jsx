@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
 import { Header } from '../components/common/Header';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchMyOrders } from '../store/slices/ordersSlice';
@@ -75,11 +76,11 @@ const Profile = () => {
             if (product.principalImage?.imageId) {
               const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
               
-              const response = await fetch(imageUrl, {
+              const response = await axios.get(imageUrl, {
                 headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob',
               });
-              const blob = await response.blob();
-              images[productId] = URL.createObjectURL(blob);
+              images[productId] = URL.createObjectURL(response.data);
             }
           } catch (error) {
             console.error(`Error al cargar imagen del producto ${productId}:`, error);

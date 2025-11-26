@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { imagesAPI } from '../../api/endpoints/images';
 import { getTokenFromStore } from '../../store';
 
@@ -19,11 +20,11 @@ export const ProductGallery = ({ images = [] }) => {
         const urls = await Promise.all(
           images.map(async (image) => {
             const url = imagesAPI.getImageUrl(image.imageId);
-            const response = await fetch(url, {
+            const response = await axios.get(url, {
               headers: token ? { Authorization: `Bearer ${token}` } : {},
+              responseType: 'blob',
             });
-            const blob = await response.blob();
-            return URL.createObjectURL(blob);
+            return URL.createObjectURL(response.data);
           })
         );
         createdUrls = urls;
