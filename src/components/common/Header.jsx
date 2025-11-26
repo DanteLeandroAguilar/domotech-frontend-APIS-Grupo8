@@ -25,7 +25,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800" style={{ backgroundColor: '#4D5D73' }}>
+    <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800" style={{ backgroundColor: '#4D5D73' }}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo y Navegación */}

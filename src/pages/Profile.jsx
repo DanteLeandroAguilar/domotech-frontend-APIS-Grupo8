@@ -6,6 +6,7 @@ import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { imagesAPI } from '../api/endpoints/images';
 import { roomsAPI } from '../api/endpoints/rooms';
 import { toast } from 'react-toastify';
+import { getStatusText, getStatusBadgeColor } from '../utils/formatters';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -159,26 +160,6 @@ const Profile = () => {
 
   const formatDiscount = (discount) => {
     return `${discount}%`;
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      DELIVERED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      CANCELED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-  };
-
-  const getStatusText = (status) => {
-    const texts = {
-      PENDING: 'Pendiente',
-      CONFIRMED: 'Confirmado',
-      DELIVERED: 'Entregado',
-      CANCELED: 'Cancelado',
-    };
-    return texts[status] || status;
   };
 
   const loadRooms = async () => {
@@ -551,7 +532,7 @@ const Profile = () => {
                         </p>
                       </div>
                       <span
-                        className={`mt-2 md:mt-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        className={`mt-2 md:mt-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
                           order.orderStatus
                         )}`}
                       >

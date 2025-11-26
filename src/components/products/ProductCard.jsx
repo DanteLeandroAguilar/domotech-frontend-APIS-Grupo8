@@ -96,7 +96,7 @@ export const ProductCard = ({ product }) => {
       </Link>
 
       {isAuthenticated && !isSeller && product.active && product.available && (
-        <div className="px-4 pb-4 space-y-2 relative z-50" onClick={(e) => e.stopPropagation()}>
+        <div className="px-4 pb-4 space-y-2 relative z-10" onClick={(e) => e.stopPropagation()}>
           <RoomSelector
             value={selectedRoom}
             onChange={setSelectedRoom}
