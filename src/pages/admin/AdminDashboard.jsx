@@ -1,50 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { Dashboard } from '../../components/admin/Dashboard';
-import { ordersAPI } from '../../api/endpoints/orders';
-import { productsAPI } from '../../api/endpoints/products';
+import { fetchAllOrders } from '../../store/slices/ordersSlice';
+import { fetchAllProducts } from '../../store/slices/productsSlice';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    totalSales: 0,
-    pendingOrders: 0,
-    productsInStock: 0,
-  });
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { orders, loading: loadingOrders } = useSelector((state) => state.orders);
+  const { products, loading: loadingProducts } = useSelector((state) => state.products);
+
+  const loading = loadingOrders || loadingProducts;
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    dispatch(fetchAllOrders());
+    dispatch(fetchAllProducts({ page: 0, size: 100 }));
+  }, [dispatch]);
 
-  const loadDashboardData = async () => {
-    try {
-      const [ordersData, productsData] = await Promise.all([
-        ordersAPI.getAll(),
-        productsAPI.getAll(0, 100),
-      ]);
+  // Calcular estadísticas usando useMemo para optimizar
+  const stats = useMemo(() => {
+    const totalSales = orders.reduce((sum, order) => sum + order.total, 0);
+    const pendingOrders = orders.filter(
+      order => order.orderStatus === 'PENDING' || order.orderStatus === 'CONFIRMED'
+    ).length;
+    const productsInStock = products.filter(p => p.stock > 0).length;
 
-      // Calcular estadísticas
-      const totalSales = ordersData.reduce((sum, order) => sum + order.total, 0);
-      const pendingOrders = ordersData.filter(
-        order => order.orderStatus === 'PENDING' || order.orderStatus === 'CONFIRMED'
-      ).length;
-      const productsInStock = productsData.content?.filter(p => p.stock > 0).length || 0;
+    return {
+      totalSales,
+      pendingOrders,
+      productsInStock,
+    };
+  }, [orders, products]);
 
-      setStats({
-        totalSales,
-        pendingOrders,
-        productsInStock,
-      });
-
-      setRecentOrders(ordersData.slice(0, 5));
-    } catch (error) {
-      console.error('Error al cargar dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Obtener pedidos recientes
+  const recentOrders = useMemo(() => {
+    return orders.slice(0, 5);
+  }, [orders]);
 
   const getStatusColor = (status) => {
     const colors = {

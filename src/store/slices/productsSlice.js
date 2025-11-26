@@ -321,11 +321,13 @@ const productsSlice = createSlice({
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        // Eliminar el producto de la lista
-        state.products = state.products.filter(p => p.productId !== action.payload);
-        // Limpiar currentProduct si es el eliminado
+        const index = state.products.findIndex(p => p.productId === action.payload);
+        if (index !== -1) {
+          state.products[index] = { ...state.products[index], active: false };
+        }
+        // Actualizar currentProduct si es el mismo
         if (state.currentProduct?.productId === action.payload) {
-          state.currentProduct = null;
+          state.currentProduct = { ...state.currentProduct, active: false };
         }
       })
       .addCase(deleteProduct.rejected, (state, action) => {
