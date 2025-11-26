@@ -41,14 +41,3 @@ body {
   color: #ffffff !important;
   border-color: #0A58BF !important;
 }
-
-/* Estilos para las opciones del selector de estado de pedidos */
-select option {
-  background-color: white !important;
-  color: #1f2937 !important;
-}
-
-.dark select option {
-  background-color: #1f2937 !important;
-  color: #f3f4f6 !important;
-}

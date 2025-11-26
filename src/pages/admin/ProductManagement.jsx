@@ -5,7 +5,7 @@ import { Footer } from '../../components/common/Footer';
 import { ProductForm } from '../../components/admin/ProductForm';
 import { ProductTable } from '../../components/admin/ProductTable';
 import { Loading } from '../../components/common/Loading';
-import { fetchAllProducts, createProduct, updateProduct, deleteProduct, updateProductStock } from '../../store/slices/productsSlice';
+import { fetchAllProducts, createProduct, updateProduct, deleteProduct } from '../../store/slices/productsSlice';
 import { imagesAPI } from '../../api/endpoints/images';
 import { toast } from 'react-toastify';
 
@@ -25,10 +25,16 @@ const ProductManagement = () => {
       let productId;
 
       if (editingProduct) {
-        // Actualizar producto existente
+        // Convertir stock a número antes de actualizar
+        const productDataWithNumberStock = {
+          ...productData,
+          stock: Number(productData.stock)
+        };
+        
+        // Actualizar producto existente (incluye stock)
         const updateResult = await dispatch(updateProduct({ 
           id: editingProduct.productId, 
-          productData 
+          productData: productDataWithNumberStock
         }));
         
         if (updateProduct.rejected.match(updateResult)) {
@@ -37,19 +43,6 @@ const ProductManagement = () => {
         }
         
         productId = editingProduct.productId;
-        
-        // Actualizar stock si cambió
-        const stockChanged = Number(productData.stock) !== Number(editingProduct.stock);
-        if (stockChanged) {
-          const stockResult = await dispatch(updateProductStock({ 
-            id: editingProduct.productId, 
-            stockData: { stock: Number(productData.stock) } 
-          }));
-          
-          if (updateProductStock.rejected.match(stockResult)) {
-            toast.error(stockResult.error?.message || 'Error al actualizar el stock');
-          }
-        }
       } else {
         // Crear nuevo producto
         const createResult = await dispatch(createProduct(productData));
@@ -120,13 +113,14 @@ const ProductManagement = () => {
             console.error('Error al marcar imagen principal:', error);
           }
         }
+        // Recargar productos después de crear/actualizar
+      dispatch(fetchAllProducts({ page: 0, size: 100 }));
       }
 
       toast.success(editingProduct ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
       setShowForm(false);
       setEditingProduct(null);
-      // Recargar productos después de crear/actualizar
-      dispatch(fetchAllProducts({ page: 0, size: 100 }));
+
     } catch (error) {
       console.error('Error al guardar producto:', error);
       toast.error(error.response?.data?.message || 'Error al guardar producto');

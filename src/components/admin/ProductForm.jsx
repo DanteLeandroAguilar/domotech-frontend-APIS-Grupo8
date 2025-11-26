@@ -38,13 +38,31 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
       });
       
       if (product.images && product.images.length > 0) {
-        const existingImages = product.images.map(img => ({
-          id: img.imageId || img.id,
-          url: img.url,
-          isMain: img.isMain || false,
-          isNew: false,
-        }));
+        // Identificar la imagen principal comparando con principalImage
+        const principalImageId = product.principalImage?.imageId || product.principalImage?.id;
+        
+        const existingImages = product.images.map(img => {
+          const imageId = img.imageId || img.id;
+          // Marcar como principal si coincide con principalImage o si tiene isMain explícito
+          const isMain = principalImageId === imageId || img.isMain === true;
+          
+          return {
+            id: imageId,
+            url: img.url,
+            isMain: isMain,
+            isNew: false,
+          };
+        });
         setImages(existingImages);
+      } else if (product.principalImage) {
+        // Si no hay array de imágenes pero hay principalImage, crear un array con esa imagen
+        const principalImageId = product.principalImage.imageId || product.principalImage.id;
+        setImages([{
+          id: principalImageId,
+          url: product.principalImage.url,
+          isMain: true,
+          isNew: false,
+        }]);
       }
     }
   }, [product, dispatch]);

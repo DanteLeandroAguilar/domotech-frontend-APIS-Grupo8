@@ -143,6 +143,18 @@ const productsSlice = createSlice({
     resetPage: (state) => {
       state.pagination.page = 0;
     },
+    updateProductInList: (state, action) => {
+      // Actualizar un producto en la lista con un ProductDto
+      const updatedProduct = action.payload;
+      const index = state.products.findIndex(p => p.productId === updatedProduct.productId);
+      if (index !== -1) {
+        state.products[index] = updatedProduct;
+      }
+      // Actualizar currentProduct si es el mismo
+      if (state.currentProduct?.productId === updatedProduct.productId) {
+        state.currentProduct = updatedProduct;
+      }
+    },
   },
   extraReducers: (builder) => {
     // Obtener productos con filtros
@@ -416,6 +428,6 @@ const productsSlice = createSlice({
   },
 });
 
-export const { clearError, clearCurrentProduct, setPage, resetPage } = productsSlice.actions;
+export const { clearError, clearCurrentProduct, setPage, resetPage, updateProductInList } = productsSlice.actions;
 export default productsSlice.reducer;
 
