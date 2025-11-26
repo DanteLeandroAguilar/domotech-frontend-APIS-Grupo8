@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { fetchCart, clearCart } from '../store/slices/cartSlice';
+import { clearCart } from '../store/slices/cartSlice';
 import { confirmOrder } from '../store/slices/ordersSlice';
 import { formatPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';

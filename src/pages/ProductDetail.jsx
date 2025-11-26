@@ -7,7 +7,7 @@ import { ProductGallery } from '../components/products/ProductGallery';
 import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
 import { fetchProductById } from '../store/slices/productsSlice';
-import { updateProductAmount, fetchCart } from '../store/slices/cartSlice';
+import { updateProductAmount } from '../store/slices/cartSlice';
 import { imagesAPI } from '../api/endpoints/images';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
