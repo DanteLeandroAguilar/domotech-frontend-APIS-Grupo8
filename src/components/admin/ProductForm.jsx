@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllCategories } from '../../store/slices/categoriesSlice';
 import { Button } from '../common/Button';
 import { ProductImageManager } from './ProductImageManager';
+import { toast } from 'react-toastify';
 
 export const ProductForm = ({ product, onSubmit, onCancel }) => {
   const dispatch = useDispatch();
@@ -84,7 +85,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
     
     // Validar que haya al menos una imagen
     if (images.length === 0) {
-      alert('Debes agregar al menos una imagen del producto');
+      toast.error('Debes agregar al menos una imagen del producto');
       return;
     }
     
