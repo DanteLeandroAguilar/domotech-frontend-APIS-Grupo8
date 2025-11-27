@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Upload, X, Star } from 'lucide-react';
 import { Button } from '../common/Button';
 import { imagesAPI } from '../../api/endpoints/images';
+import { toast } from 'react-toastify';
 
 export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5 }) => {
   const [previewImages, setPreviewImages] = useState([]);
@@ -53,7 +54,7 @@ export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5
 
   const handleFiles = (files) => {
     if (previewImages.length + files.length > maxImages) {
-      alert(`Solo puedes subir un máximo de ${maxImages} imágenes`);
+      toast.error(`Solo puedes subir un máximo de ${maxImages} imágenes`);
       return;
     }
 
