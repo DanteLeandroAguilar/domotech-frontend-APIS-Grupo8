@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Upload, X, Star } from 'lucide-react';
 import { Button } from '../common/Button';
 import { imagesAPI } from '../../api/endpoints/images';
+import { toast } from 'react-toastify';
 
 export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5 }) => {
   const [previewImages, setPreviewImages] = useState([]);
@@ -9,19 +10,41 @@ export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5
 
   // Sincronizar con las imágenes que vienen por props
   useEffect(() => {
-    if (images && images.length > 0) {
-      // Convertir las imágenes existentes al formato esperado
-      const formattedImages = images.map(img => ({
-        id: img.imageId || img.id,
-        url: img.url || imagesAPI.getImageUrl(img.imageId || img.id),
-        isMain: img.isMain || false,
-        isNew: img.isNew || false,
-        file: img.file // Solo existirá en imágenes nuevas
-      }));
-      setPreviewImages(formattedImages);
-    } else {
-      setPreviewImages([]);
-    }
+    const loadImages = async () => {
+      if (images && images.length > 0) {
+        // Cargar imágenes existentes en base64
+        const formattedImages = await Promise.all(
+          images.map(async (img) => {
+            const imageId = img.imageId || img.id;
+            let url = img.url;
+            
+            // Si no hay URL y hay imageId, cargar con getImageBase64
+            if (!url && imageId && !img.isNew) {
+              try {
+                const base64 = await imagesAPI.getImageBase64(imageId);
+                url = `data:image/jpeg;base64,${base64}`;
+              } catch (e) {
+                // Fallback a URL directa si falla
+                url = imagesAPI.getImageUrl(imageId);
+              }
+            }
+            
+            return {
+              id: imageId,
+              url: url || imagesAPI.getImageUrl(imageId),
+              isMain: img.isMain || false,
+              isNew: img.isNew || false,
+              file: img.file // Solo existirá en imágenes nuevas
+            };
+          })
+        );
+        setPreviewImages(formattedImages);
+      } else {
+        setPreviewImages([]);
+      }
+    };
+
+    loadImages();
   }, [images]);
 
   const handleFileSelect = (e) => {
@@ -31,7 +54,7 @@ export const ProductImageManager = ({ images = [], onImagesChange, maxImages = 5
 
   const handleFiles = (files) => {
     if (previewImages.length + files.length > maxImages) {
-      alert(`Solo puedes subir un máximo de ${maxImages} imágenes`);
+      toast.error(`Solo puedes subir un máximo de ${maxImages} imágenes`);
       return;
     }
 

@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { authAPI } from '../api/endpoints/auth';
+import { login } from '../store/slices/authSlice';
 import { toast } from 'react-toastify';
 
-const Login = ({ cartItemsCount }) => {
+const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -33,23 +34,29 @@ const Login = ({ cartItemsCount }) => {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const data = await authAPI.login(formData);
-      authAPI.saveAuth(data.access_token);
-      toast.success('Sesión iniciada');
-      navigate('/');
+      const result = await dispatch(login(formData));
+      if (login.fulfilled.match(result)) {
+        toast.success('Sesión iniciada');
+        // Pequeño delay para asegurar que el toast se muestre antes de navegar
+        setTimeout(() => {
+          navigate('/');
+        }, 100);
+      } else if (login.rejected.match(result)) {
+        // Mostrar el error del backend o un mensaje genérico
+        const errorMessage = result.error?.message || result.payload?.message || 'Error al iniciar sesión. Verifica tus credenciales.';
+        toast.error(errorMessage);
+      }
     } catch (error) {
-      toast.error(error.message || 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
+      // Capturar cualquier error inesperado
+      const errorMessage = error?.message || 'Error inesperado al iniciar sesión';
+      toast.error(errorMessage);
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <Header cartItemsCount={cartItemsCount} />
+      <Header />
       
       <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
@@ -139,8 +146,8 @@ const Login = ({ cartItemsCount }) => {
               </div>
             </div>
 
-            <Button type="submit" fullWidth disabled={loading}>
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            <Button type="submit" fullWidth>
+              Iniciar Sesión
             </Button>
           </form>
         </div>

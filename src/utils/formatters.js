@@ -28,3 +28,25 @@ export const calculateDiscountPercentage = (price, discountPercent) => {
   const percent = Math.min(Math.max(Number(discountPercent), 0), 100);
   return Math.round(percent);
 };
+
+// Obtener texto traducido del estado de una orden
+export const getStatusText = (status) => {
+  const texts = {
+    PENDING: 'Pendiente',
+    CONFIRMED: 'Confirmado',
+    DELIVERED: 'Entregado',
+    CANCELED: 'Cancelado',
+  };
+  return texts[status] || status;
+};
+
+// Obtener color de texto para el estado de una orden (sin fondo)
+export const getStatusColor = (status) => {
+  const colors = {
+    PENDING: 'text-yellow-600 dark:text-yellow-400',
+    CONFIRMED: 'text-blue-600 dark:text-blue-400',
+    DELIVERED: 'text-green-600 dark:text-green-400',
+    CANCELED: 'text-red-600 dark:text-red-400',
+  };
+  return colors[status] || 'text-gray-600 dark:text-gray-400';
+};

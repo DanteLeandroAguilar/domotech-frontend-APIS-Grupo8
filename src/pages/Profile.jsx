@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
-import { authAPI } from '../api/endpoints/auth';
-import { ordersAPI } from '../api/endpoints/orders';
-import { productsAPI } from '../api/endpoints/products';
+import { updateUser } from '../store/slices/authSlice';
+import { fetchMyOrders } from '../store/slices/ordersSlice';
 import { imagesAPI } from '../api/endpoints/images';
+import { toast } from 'react-toastify';
 
-const Profile = ({ cartItemsCount }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const Profile = () => {
+  const dispatch = useDispatch();
+  const { orders, loading: loadingOrders, error: ordersError } = useSelector((state) => state.orders);
+  const { user: userInfo, loading, error, isAuthenticated, token, isBuyer } = useSelector((state) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -18,74 +18,44 @@ const Profile = ({ cartItemsCount }) => {
     lastName: '',
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState(null);
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' o 'orders'
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [ordersError, setOrdersError] = useState(null);
   const [productImages, setProductImages] = useState({});
+  const imagesLoadedRef = useRef(false);
+  const ordersLengthRef = useRef(0);
+  const productImagesRef = useRef({});
 
+  // Asegurar que los vendedores no puedan acceder al tab de pedidos
   useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
+    if (!isBuyer && activeTab === 'orders') {
+      setActiveTab('profile');
+    }
+  }, [activeTab, isBuyer]);
 
-      setIsAuthenticated(true);
-      try {
-        const userData = await authAPI.getLoggedUser();
-        setUserInfo(userData);
-        setFormData({
-          username: userData.username || '',
-          email: userData.email || '',
-          name: userData.name || '',
-          lastName: userData.lastName || '',
-        });
-      } catch (err) {
-        console.error('Error al obtener datos del usuario:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
+  // Inicializar formData solo cuando se carga el usuario por primera vez y no está editando
   useEffect(() => {
-    if (activeTab === 'orders' && isAuthenticated && orders.length === 0) {
-      fetchOrders();
+    if (userInfo && !isEditing && !formData.username) {
+      setFormData({
+        username: userInfo.username || '',
+        email: userInfo.email || '',
+        name: userInfo.name || '',
+        lastName: userInfo.lastName || '',
+      });
     }
-  }, [activeTab, isAuthenticated]);
+  }, [userInfo, isEditing, formData.username]);
 
-  // Cargar imágenes cuando cambian las órdenes
+  // Cargar órdenes solo cuando se cambia a la pestaña de órdenes (solo para compradores)
   useEffect(() => {
-    if (orders.length > 0) {
-      loadOrderProductImages();
+    if (isBuyer && activeTab === 'orders' && userInfo && orders.length === 0 && !loadingOrders) {
+      dispatch(fetchMyOrders());
     }
-  }, [orders]);
+  }, [activeTab, userInfo, dispatch, orders.length, loadingOrders, isBuyer]);
 
-  const fetchOrders = async () => {
-    setLoadingOrders(true);
-    setOrdersError(null);
-    try {
-      const ordersData = await ordersAPI.getMyOrders();
-      setOrders(ordersData);
-    } catch (err) {
-      console.error('Error al obtener pedidos:', err);
-      setOrdersError(err.message);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
-
-  const loadOrderProductImages = async () => {
+  // Función para cargar imágenes de productos
+  const loadOrderProductImages = useCallback(async () => {
+    if (!token || orders.length === 0) return;
+    
     try {
       const images = {};
-      const token = localStorage.getItem('token');
       
       // Recopilar todos los productIds únicos de todas las órdenes
       const productIds = new Set();
@@ -95,20 +65,17 @@ const Profile = ({ cartItemsCount }) => {
         });
       });
 
-      // Cargar imágenes de todos los productos
+      // Cargar imágenes principales directamente usando imagesAPI.getPrincipal
       await Promise.all(
         Array.from(productIds).map(async (productId) => {
           try {
-            const product = await productsAPI.getById(productId);
+            // Obtener imagen principal directamente por productId
+            const principal = await imagesAPI.getPrincipal(productId);
+            const imageId = principal?.imageId;
             
-            if (product.principalImage?.imageId) {
-              const imageUrl = imagesAPI.getImageUrl(product.principalImage.imageId);
-              
-              const response = await fetch(imageUrl, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
-              });
-              const blob = await response.blob();
-              images[productId] = URL.createObjectURL(blob);
+            if (imageId) {
+              const base64 = await imagesAPI.getImageBase64(imageId);
+              images[productId] = `data:image/jpeg;base64,${base64}`;
             }
           } catch (error) {
             console.error(`Error al cargar imagen del producto ${productId}:`, error);
@@ -117,17 +84,45 @@ const Profile = ({ cartItemsCount }) => {
       );
       
       setProductImages(images);
+      productImagesRef.current = images;
+      imagesLoadedRef.current = true;
     } catch (error) {
       console.error('Error al cargar imágenes de productos:', error);
     }
-  };
+  }, [orders, token]);
+
+  // Cargar imágenes solo cuando cambia a la pestaña de órdenes y hay órdenes nuevas (solo para compradores)
+  useEffect(() => {
+    if (isBuyer && activeTab === 'orders' && orders.length > 0) {
+      // Si cambió el número de órdenes, resetear el flag y cargar imágenes
+      if (orders.length !== ordersLengthRef.current) {
+        imagesLoadedRef.current = false;
+        ordersLengthRef.current = orders.length;
+      }
+      
+      if (!imagesLoadedRef.current && token) {
+        loadOrderProductImages();
+      }
+    }
+  }, [activeTab, orders.length, token, loadOrderProductImages, isBuyer]);
+
+  // Limpiar imágenes cuando se cambia a la pestaña de perfil
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      imagesLoadedRef.current = false;
+      // Limpiar Object URLs
+      Object.values(productImagesRef.current).forEach((url) => URL.revokeObjectURL(url));
+      productImagesRef.current = {};
+      setProductImages({});
+    }
+  }, [activeTab]);
 
   // Limpiar Object URLs al desmontar el componente
   useEffect(() => {
     return () => {
-      Object.values(productImages).forEach((url) => URL.revokeObjectURL(url));
+      Object.values(productImagesRef.current).forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [productImages]);
+  }, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -174,15 +169,18 @@ const Profile = ({ cartItemsCount }) => {
     return texts[status] || status;
   };
 
+  // Ordenar órdenes por orderId descendente (más recientes primero)
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => b.orderId - a.orderId);
+  }, [orders]);
+
   const handleEditClick = () => {
     setIsEditing(true);
     setSaveSuccess(false);
-    setSaveError(null);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setSaveError(null);
     // Restaurar los datos originales
     setFormData({
       username: userInfo.username || '',
@@ -202,24 +200,27 @@ const Profile = ({ cartItemsCount }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaveError(null);
     setSaveSuccess(false);
 
-    try {
-      const updatedUser = await authAPI.updateUser(userInfo.idUser, formData);
-      setUserInfo(updatedUser);
+    if (!userInfo?.idUser) {
+      toast.error('No se pudo identificar al usuario');
+      return;
+    }
+
+    const result = await dispatch(updateUser({ id: userInfo.idUser, userData: formData }));
+    if (updateUser.fulfilled.match(result)) {
       setIsEditing(false);
       setSaveSuccess(true);
+      toast.success('Perfil actualizado correctamente');
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
-      console.error('Error al actualizar usuario:', err);
-      setSaveError(err.message);
+    } else if (updateUser.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al actualizar el perfil');
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header cartItemsCount={cartItemsCount} />
+      <Header />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto">
@@ -255,16 +256,18 @@ const Profile = ({ cartItemsCount }) => {
               >
                 Perfil
               </button>
-              <button
-                onClick={() => setActiveTab('orders')}
-                className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
-                  activeTab === 'orders'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
-                }`}
-              >
-                Pedidos
-              </button>
+              {isBuyer && (
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                    activeTab === 'orders'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Pedidos
+                </button>
+              )}
             </nav>
           </div>
 
@@ -298,11 +301,6 @@ const Profile = ({ cartItemsCount }) => {
                 userInfo ? (
                   isEditing ? (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                      {saveError && (
-                        <div className="p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg text-sm">
-                          {saveError}
-                        </div>
-                      )}
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -420,7 +418,7 @@ const Profile = ({ cartItemsCount }) => {
           )}
 
           {/* Orders Tab Content */}
-          {activeTab === 'orders' && (
+          {activeTab === 'orders' && isBuyer && (
             <div className="space-y-4">
               {loadingOrders ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700 text-center">
@@ -430,13 +428,13 @@ const Profile = ({ cartItemsCount }) => {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700">
                   <p className="text-red-600 dark:text-red-400">Error: {ordersError}</p>
                 </div>
-              ) : orders.length === 0 ? (
+              ) : sortedOrders.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700 text-center">
                   <span className="material-symbols-outlined text-gray-400 text-6xl mb-4">shopping_bag</span>
                   <p className="text-gray-600 dark:text-gray-400">No tienes pedidos aún</p>
                 </div>
               ) : (
-                orders.map((order) => (
+                sortedOrders.map((order) => (
                   <div
                     key={order.orderId}
                     className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700"

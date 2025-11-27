@@ -1,50 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { Dashboard } from '../../components/admin/Dashboard';
-import { ordersAPI } from '../../api/endpoints/orders';
-import { productsAPI } from '../../api/endpoints/products';
+import { fetchAllOrders, updateOrderStatus } from '../../store/slices/ordersSlice';
+import { fetchAllProducts } from '../../store/slices/productsSlice';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    totalSales: 0,
-    pendingOrders: 0,
-    productsInStock: 0,
-  });
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { orders, loading: loadingOrders } = useSelector((state) => state.orders);
+  const { products, loading: loadingProducts } = useSelector((state) => state.products);
+
+  const loading = loadingOrders || loadingProducts;
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    dispatch(fetchAllOrders());
+    dispatch(fetchAllProducts({ page: 0, size: 100 }));
+  }, [dispatch]);
 
-  const loadDashboardData = async () => {
+  // Calcular estadísticas usando useMemo para optimizar
+  const stats = useMemo(() => {
+    const totalSales = orders.reduce((sum, order) => sum + order.total, 0);
+    const pendingOrders = orders.filter(
+      order => order.orderStatus === 'PENDING' || order.orderStatus === 'CONFIRMED'
+    ).length;
+    const productsInStock = products.filter(p => p.stock > 0).length;
+
+    return {
+      totalSales,
+      pendingOrders,
+      productsInStock,
+    };
+  }, [orders, products]);
+
+  // Estados para el cambio de estado
+  const [updatingOrderId, setUpdatingOrderId] = useState(null);
+
+  // Manejar cambio de estado
+  const handleStatusChange = async (orderId, newStatus) => {
+    setUpdatingOrderId(orderId);
     try {
-      const [ordersData, productsData] = await Promise.all([
-        ordersAPI.getAll(),
-        productsAPI.getAll(0, 100),
-      ]);
-
-      // Calcular estadísticas
-      const totalSales = ordersData.reduce((sum, order) => sum + order.total, 0);
-      const pendingOrders = ordersData.filter(
-        order => order.orderStatus === 'PENDING' || order.orderStatus === 'CONFIRMED'
-      ).length;
-      const productsInStock = productsData.content?.filter(p => p.stock > 0).length || 0;
-
-      setStats({
-        totalSales,
-        pendingOrders,
-        productsInStock,
-      });
-
-      setRecentOrders(ordersData.slice(0, 5));
+      await dispatch(updateOrderStatus({ orderId, orderStatus: newStatus })).unwrap();
     } catch (error) {
-      console.error('Error al cargar dashboard:', error);
+      console.error('Error al actualizar el estado:', error);
     } finally {
-      setLoading(false);
+      setUpdatingOrderId(null);
     }
   };
+
+  // Ordenar órdenes por orderId descendente (más recientes primero)
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => b.orderId - a.orderId);
+  }, [orders]);
+
+  // Estados disponibles
+  const orderStatuses = ['PENDING', 'CONFIRMED', 'DELIVERED', 'CANCELED'];
 
   const getStatusColor = (status) => {
     const colors = {
@@ -68,9 +78,9 @@ const AdminDashboard = () => {
         {/* Estadísticas */}
         <Dashboard stats={stats} />
 
-        {/* Pedidos recientes */}
+        {/* Gestión de Pedidos */}
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4">
-          Pedidos Recientes
+          Gestión de Pedidos
         </h2>
         
         <div className="overflow-x-auto bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-800">
@@ -95,20 +105,14 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-              {loading ? (
+              {sortedOrders.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    Cargando pedidos...
-                  </td>
-                </tr>
-              ) : recentOrders.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    No hay pedidos recientes
+                    No hay pedidos
                   </td>
                 </tr>
               ) : (
-                recentOrders.map((order) => (
+                sortedOrders.map((order) => (
                   <tr key={order.orderId}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       #{order.orderId}
@@ -120,9 +124,20 @@ const AdminDashboard = () => {
                       {new Date(order.orderDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.orderStatus)}`}>
-                        {order.orderStatus}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={order.orderStatus}
+                          onChange={(e) => handleStatusChange(order.orderId, e.target.value)}
+                          disabled={updatingOrderId === order.orderId}
+                          className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${getStatusColor(order.orderStatus)}`}
+                        >
+                          {orderStatuses.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       ${order.total.toFixed(2)}

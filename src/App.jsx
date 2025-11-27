@@ -1,41 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { AppRoutes } from './routes/AppRoutes';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { cartAPI } from './api/endpoints/cart';
-import { isBuyer, isAuthenticated } from './utils/auth';
+import { fetchCart } from './store/slices/cartSlice';
+import { getLoggedUser } from './store/slices/authSlice';
 
 function App() {
-  const [cartItemsCount, setCartItemsCount] = useState(0);
+  const dispatch = useDispatch();
+  const { isAuthenticated, token, user, isBuyer } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    loadCartCount();
-  }, []);
-
-  const loadCartCount = async () => {
-    if (!isAuthenticated() || !isBuyer()) {
-      setCartItemsCount(0);
-      return;
+    // Cargar información del usuario si hay token pero no hay usuario
+    if (token && !user) {
+      dispatch(getLoggedUser());
     }
+  }, [dispatch, token, user]);
 
-    try {
-      const data = await cartAPI.getMyCart();
-      if (data && data.items) {
-        const count = data.items.reduce((total, item) => total + item.amount, 0);
-        setCartItemsCount(count);
-      }
-    } catch (error) {
-      console.error('Error al cargar carrito:', error);
+  useEffect(() => {
+    if (isAuthenticated && isBuyer) {
+      dispatch(fetchCart());
     }
-  };
-
-  const updateCartCount = () => {
-    loadCartCount();
-  };
+  }, [dispatch, isAuthenticated, isBuyer]);
 
   return (
     <>
-      <AppRoutes cartItemsCount={cartItemsCount} updateCartCount={updateCartCount} />
+      <AppRoutes />
       <ToastContainer />
     </>
   );

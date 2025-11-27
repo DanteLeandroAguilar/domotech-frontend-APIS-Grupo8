@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { categoriesAPI } from '../../api/endpoints/categories';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllCategories } from '../../store/slices/categoriesSlice';
 
 export const ProductFilters = ({ onFilterChange }) => {
-  const [categories, setCategories] = useState([]);
+  const dispatch = useDispatch();
+  const { categories, loading } = useSelector((state) => state.categories);
   const [filters, setFilters] = useState({
     categoryId: '',
     brand: '',
@@ -14,17 +16,8 @@ export const ProductFilters = ({ onFilterChange }) => {
   });
 
   useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = async () => {
-    try {
-      const data = await categoriesAPI.getAll();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error al cargar categorías:', error);
-    }
-  };
+    dispatch(fetchAllCategories());
+  }, [dispatch]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({

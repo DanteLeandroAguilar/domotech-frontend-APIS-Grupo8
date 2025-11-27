@@ -1,47 +1,80 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { ProductGrid } from '../components/products/ProductGrid';
 import { ProductFilters } from '../components/products/ProductFilters';
 import { Loading } from '../components/common/Loading';
-import { useProducts } from '../hooks/useProducts';
+import { fetchProducts, resetPage, setPage } from '../store/slices/productsSlice';
 
-const Catalog = ({ cartItemsCount, updateCartCount }) => {
+const Catalog = () => {
+  const dispatch = useDispatch();
+  const { products, loading, error, pagination } = useSelector((state) => state.products);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filters, setFilters] = useState({});
   const searchTerm = searchParams.get('search');
 
+  // Fetch inicial solo en el primer render o cuando cambia searchTerm desde la URL (búsqueda desde Header)
   useEffect(() => {
-    if (searchTerm) {
-      // Si hay término de búsqueda, aplicarlo como filtro
-      setFilters({ searchTerm });
-    } else {
-      // Si no hay búsqueda, limpiar filtros
-      setFilters({});
-    }
-  }, [searchTerm]);
-
-  const { products, loading, error, pagination, nextPage, prevPage, resetPage } = useProducts(filters);
+      const filters = searchTerm ? { searchTerm } : {};
+      dispatch(fetchProducts({
+        ...filters,
+        page: 0,
+        size: pagination.size,
+      }));
+      dispatch(resetPage());
+  }, [dispatch, searchTerm]);
 
   const handleFilterChange = (newFilters) => {
     // Limpiar el parámetro de búsqueda de la URL cuando se usan filtros
     setSearchParams({});
-    setFilters(newFilters);
     // Resetear a la primera página cuando cambian los filtros
-    resetPage();
+    dispatch(resetPage());
+    // Hacer fetch con los nuevos filtros
+    dispatch(fetchProducts({
+      ...newFilters,
+      page: 0,
+      size: pagination.size,
+    }));
   };
 
   const handleClearSearch = () => {
     // Limpiar búsqueda y volver a mostrar todos los productos
     setSearchParams({});
-    setFilters({});
-    resetPage();
+    dispatch(resetPage());
+  };
+
+  const nextPage = () => {
+    if (pagination.page < pagination.totalPages - 1) {
+      const newPage = pagination.page + 1;
+      dispatch(setPage(newPage));
+      // Hacer fetch con la nueva página
+      const filters = searchTerm ? { searchTerm } : {};
+      dispatch(fetchProducts({
+        ...filters,
+        page: newPage,
+        size: pagination.size,
+      }));
+    }
+  };
+
+  const prevPage = () => {
+    if (pagination.page > 0) {
+      const newPage = pagination.page - 1;
+      dispatch(setPage(newPage));
+      // Hacer fetch con la nueva página
+      const filters = searchTerm ? { searchTerm } : {};
+      dispatch(fetchProducts({
+        ...filters,
+        page: newPage,
+        size: pagination.size,
+      }));
+    }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br ">
-      <Header cartItemsCount={cartItemsCount} />
+      <Header />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -120,7 +153,7 @@ const Catalog = ({ cartItemsCount, updateCartCount }) => {
               </div>
             ) : (
               <>
-                <ProductGrid products={products} updateCartCount={updateCartCount} />
+                <ProductGrid products={products} />
 
                 {/* Paginación mejorada */}
                 {pagination.totalPages > 1 && (

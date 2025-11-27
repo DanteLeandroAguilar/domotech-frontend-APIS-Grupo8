@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { categoriesAPI } from '../../api/endpoints/categories';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllCategories } from '../../store/slices/categoriesSlice';
 import { Button } from '../common/Button';
 import { ProductImageManager } from './ProductImageManager';
+import { toast } from 'react-toastify';
 
 export const ProductForm = ({ product, onSubmit, onCancel }) => {
-  const [categories, setCategories] = useState([]);
+  const dispatch = useDispatch();
+  const { categories } = useSelector((state) => state.categories);
   const [images, setImages] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -20,7 +23,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
   });
 
   useEffect(() => {
-    loadCategories();
+    dispatch(fetchAllCategories());
     if (product) {
       setFormData({
         name: product.name || '',
@@ -36,25 +39,34 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
       });
       
       if (product.images && product.images.length > 0) {
-        const existingImages = product.images.map(img => ({
-          id: img.imageId || img.id,
-          url: img.url,
-          isMain: img.isMain || false,
-          isNew: false,
-        }));
+        // Identificar la imagen principal comparando con principalImage
+        const principalImageId = product.principalImage?.imageId || product.principalImage?.id;
+        
+        const existingImages = product.images.map(img => {
+          const imageId = img.imageId || img.id;
+          // Marcar como principal si coincide con principalImage o si tiene isMain explícito
+          const isMain = principalImageId === imageId || img.isMain === true;
+          
+          return {
+            id: imageId,
+            url: img.url,
+            isMain: isMain,
+            isNew: false,
+          };
+        });
         setImages(existingImages);
+      } else if (product.principalImage) {
+        // Si no hay array de imágenes pero hay principalImage, crear un array con esa imagen
+        const principalImageId = product.principalImage.imageId || product.principalImage.id;
+        setImages([{
+          id: principalImageId,
+          url: product.principalImage.url,
+          isMain: true,
+          isNew: false,
+        }]);
       }
     }
-  }, [product]);
-
-  const loadCategories = async () => {
-    try {
-      const data = await categoriesAPI.getAll();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error al cargar categorías:', error);
-    }
-  };
+  }, [product, dispatch]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -73,7 +85,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
     
     // Validar que haya al menos una imagen
     if (images.length === 0) {
-      alert('Debes agregar al menos una imagen del producto');
+      toast.error('Debes agregar al menos una imagen del producto');
       return;
     }
     

@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { Button } from '../components/common/Button';
-import { cartAPI } from '../api/endpoints/cart';
-import { ordersAPI } from '../api/endpoints/orders';
+import { clearCart } from '../store/slices/cartSlice';
+import { confirmOrder } from '../store/slices/ordersSlice';
 import { formatPrice } from '../utils/formatters';
 import { toast } from 'react-toastify';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const { confirming } = useSelector((state) => state.orders);
+  const { cart } = useSelector((state) => state.cart);
   const [formData, setFormData] = useState({
     fullName: '',
     address: '',
@@ -27,19 +29,6 @@ const Checkout = () => {
     // Datos de PayPal
     paypalEmail: '',
   });
-
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  const loadCart = async () => {
-    try {
-      const data = await cartAPI.getMyCart();
-      setCart(data);
-    } catch (error) {
-      console.error('Error al cargar carrito:', error);
-    }
-  };
 
   const getCartTotal = () => {
     if (!cart || !cart.items) return 0;
@@ -71,15 +60,14 @@ const Checkout = () => {
       return;
     }
     
-    setLoading(true);
-    try {
-      await ordersAPI.confirm();
+    const result = await dispatch(confirmOrder());
+    if (confirmOrder.fulfilled.match(result)) {
+      // Vaciar el carrito después de confirmar la orden exitosamente
+      await dispatch(clearCart());
       toast.success('Orden confirmada');
       navigate('/order-summary');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al procesar la orden');
-    } finally {
-      setLoading(false);
+    } else if (confirmOrder.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al confirmar la orden');
     }
   };
 
@@ -416,10 +404,10 @@ const Checkout = () => {
                   <Button
                     type="submit"
                     fullWidth
-                    disabled={loading}
+                    disabled={confirming}
                     className="mt-6"
                   >
-                    {loading ? 'Procesando...' : 'Confirmar Compra'}
+                    {confirming ? 'Procesando...' : 'Confirmar Compra'}
                   </Button>
 
                   <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-700/50 py-3 rounded-lg">

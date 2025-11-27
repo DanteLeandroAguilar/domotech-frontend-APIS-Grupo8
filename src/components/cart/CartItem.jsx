@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { formatPrice } from '../../utils/formatters';
 import { imagesAPI } from '../../api/endpoints/images';
-import { cartAPI } from '../../api/endpoints/cart';
+import { updateProductAmount } from '../../store/slices/cartSlice';
 
-export const CartItem = ({ item, onUpdate }) => {
-  const [loading, setLoading] = useState(false);
+export const CartItem = ({ item }) => {
+  const dispatch = useDispatch();
+  const { updating } = useSelector((state) => state.cart);
 
   const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/100x100?text=Producto');
 
   useEffect(() => {
-    let createdUrl;
-    const loadBlob = async () => {
+    const loadImage = async () => {
       let imageId = item.product?.principalImage?.imageId;
       // Si el item del carrito no trae el objeto product, pedimos la imagen principal por productId
       if (!imageId && item.productId) {
@@ -26,61 +27,28 @@ export const CartItem = ({ item, onUpdate }) => {
         return;
       }
       try {
-        const token = localStorage.getItem('token');
-        const url = imagesAPI.getImageUrl(imageId);
-        const response = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const blob = await response.blob();
-        createdUrl = URL.createObjectURL(blob);
-        setImageUrl(createdUrl);
+        const base64 = await imagesAPI.getImageBase64(imageId);
+        setImageUrl(`data:image/jpeg;base64,${base64}`);
       } catch (e) {
-        // Fallback a URL directa si el blob falla
+        // Fallback a URL directa si falla
         setImageUrl(imagesAPI.getImageUrl(imageId));
       }
     };
-    loadBlob();
-    return () => {
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
-  }, [item.product?.principalImage?.imageId]);
+    loadImage();
+  }, [item.product?.principalImage?.imageId, item.productId]);
 
   const handleIncrease = async () => {
-    setLoading(true);
-    try {
-      await cartAPI.updateProductAmount(item.productId, item.amount + 1);
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Error al actualizar cantidad:', error);
-    } finally {
-      setLoading(false);
-    }
+    await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount + 1 }));
   };
 
   const handleDecrease = async () => {
     if (item.amount > 1) {
-      setLoading(true);
-      try {
-        await cartAPI.updateProductAmount(item.productId, item.amount - 1);
-        if (onUpdate) onUpdate();
-      } catch (error) {
-        console.error('Error al actualizar cantidad:', error);
-      } finally {
-        setLoading(false);
-      }
+      await dispatch(updateProductAmount({ productId: item.productId, amount: item.amount - 1 }));
     }
   };
 
   const handleRemove = async () => {
-    setLoading(true);
-    try {
-      await cartAPI.updateProductAmount(item.productId, 0);
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Error al eliminar producto:', error);
-    } finally {
-      setLoading(false);
-    }
+    await dispatch(updateProductAmount({ productId: item.productId, amount: 0 }));
   };
 
   // Usar los valores que vienen del backend
@@ -127,7 +95,7 @@ export const CartItem = ({ item, onUpdate }) => {
       <div className="flex items-center gap-3">
         <button
           onClick={handleDecrease}
-          disabled={loading || item.amount <= 1}
+          disabled={updating || item.amount <= 1}
           className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="material-symbols-outlined text-lg">remove</span>
@@ -135,7 +103,7 @@ export const CartItem = ({ item, onUpdate }) => {
         <span className="w-8 text-center font-medium">{item.amount}</span>
         <button
           onClick={handleIncrease}
-          disabled={loading}
+          disabled={updating}
           className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-lg">add</span>
@@ -150,7 +118,7 @@ export const CartItem = ({ item, onUpdate }) => {
       {/* Botón eliminar */}
       <button
         onClick={handleRemove}
-        disabled={loading}
+        disabled={updating}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
       >
         <span className="material-symbols-outlined">delete</span>

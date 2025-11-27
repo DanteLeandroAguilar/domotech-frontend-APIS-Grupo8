@@ -1,50 +1,32 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../components/common/Header';
 import { Footer } from '../components/common/Footer';
 import { ProductGallery } from '../components/products/ProductGallery';
 import { Button } from '../components/common/Button';
 import { Loading } from '../components/common/Loading';
-import { productsAPI } from '../api/endpoints/products';
+import { fetchProductById } from '../store/slices/productsSlice';
+import { updateProductAmount } from '../store/slices/cartSlice';
 import { imagesAPI } from '../api/endpoints/images';
-import { cartAPI } from '../api/endpoints/cart';
 import { formatPrice, calculateDiscountPercentage, calculateDiscountedPrice } from '../utils/formatters';
-import { isSeller as authIsSeller, isAuthenticated as authIsAuthenticated } from '../utils/auth';
 import { toast } from 'react-toastify';
 
-const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
+const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { currentProduct, loading } = useSelector((state) => state.products);
+  const { cart, updating } = useSelector((state) => state.cart);
+  const { isAuthenticated, isSeller } = useSelector((state) => state.auth);
   
-  const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [addingToCart, setAddingToCart] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSeller, setIsSeller] = useState(false);
 
   useEffect(() => {
-    loadAuthData();
-    loadProduct();
+    dispatch(fetchProductById(id));
     loadImages();
-  }, [id]);
-
-  const loadAuthData = () => {
-    setIsAuthenticated(authIsAuthenticated());
-    setIsSeller(authIsSeller());
-  };
-
-  const loadProduct = async () => {
-    try {
-      const data = await productsAPI.getById(id);
-      setProduct(data);
-    } catch (error) {
-      console.error('Error al cargar producto:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [id, dispatch]);
 
   const loadImages = async () => {
     try {
@@ -61,27 +43,24 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
       return;
     }
 
-    setAddingToCart(true);
-    try {
-      // Sumar a la cantidad existente en carrito en lugar de fijarla
-      const currentCart = await cartAPI.getMyCart();
-      const existingItem = currentCart?.items?.find((it) => it.productId === product.productId);
-      const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
-      const newAmount = currentAmount + quantity;
-      await cartAPI.updateProductAmount(product.productId, newAmount);
-      updateCartCount();
+    if (!currentProduct) return;
+
+    // Sumar a la cantidad existente en carrito en lugar de fijarla
+    const existingItem = cart?.items?.find((it) => it.productId === currentProduct.productId);
+    const currentAmount = existingItem ? Number(existingItem.amount || 0) : 0;
+    const newAmount = currentAmount + quantity;
+    
+    const result = await dispatch(updateProductAmount({ productId: currentProduct.productId, amount: newAmount }));
+    if (updateProductAmount.fulfilled.match(result)) {
+      // El carrito ya se actualizó con la respuesta del backend
       toast.success('Producto agregado al carrito');
-    } catch (error) {
-      toast.error(error.message || 'Error al agregar al carrito');
-    } finally {
-      setAddingToCart(false);
     }
   };
 
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header cartItemsCount={cartItemsCount} />
+        <Header />
         <main className="flex-grow">
           <Loading message="Cargando producto..." />
         </main>
@@ -90,10 +69,12 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
     );
   }
 
+  const product = currentProduct;
+
   if (!product) {
     return (
       <div className="flex flex-col min-h-screen">
-        <Header cartItemsCount={cartItemsCount} />
+        <Header />
         <main className="flex-grow container mx-auto px-4 py-12 text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             Producto no encontrado
@@ -109,7 +90,7 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header cartItemsCount={cartItemsCount} />
+      <Header />
       
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -197,11 +178,11 @@ const ProductDetail = ({ cartItemsCount, updateCartCount }) => {
               <Button
                 fullWidth
                 onClick={handleAddToCart}
-                disabled={addingToCart}
+                disabled={updating}
                 className="flex items-center justify-center gap-3"
               >
                 <span className="material-symbols-outlined">add_shopping_cart</span>
-                {addingToCart ? 'Agregando...' : 'Añadir al Carrito'}
+                {updating ? 'Agregando...' : 'Añadir al Carrito'}
               </Button>
             )}
 

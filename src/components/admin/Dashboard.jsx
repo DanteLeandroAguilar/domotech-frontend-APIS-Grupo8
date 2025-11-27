@@ -20,7 +20,7 @@ export const Dashboard = ({ stats }) => {
 
       <div className="bg-white dark:bg-gray-800/50 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          Pedidos Pendientes
+          Pedidos en curso
         </h3>
         <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
           {displayStats.pendingOrders || '0'}

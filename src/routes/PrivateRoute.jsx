@@ -1,19 +1,52 @@
 import { Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../store/slices/authSlice';
 
 export const PrivateRoute = ({ children, requiredRole }) => {
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const dispatch = useDispatch();
+  const { 
+    isAuthenticated, 
+    isSeller, 
+    isBuyer, 
+    jwtPayload, 
+    loading 
+  } = useSelector((state) => state.auth);
 
+  // Verificar expiración del token
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
+    if (jwtPayload?.exp && Date.now() >= jwtPayload.exp * 1000) {
+      dispatch(logout());
     }
-    
-    setLoading(false);
-  }, []);
+  }, [jwtPayload, dispatch]);
+
+  // Verificar acceso basado en rol
+  const checkAccess = () => {
+    if (!isAuthenticated) {
+      return { isAuth: false, hasAccess: false };
+    }
+
+    // Verificar expiración
+    if (jwtPayload?.exp && Date.now() >= jwtPayload.exp * 1000) {
+      return { isAuth: false, hasAccess: false };
+    }
+
+    if (!requiredRole) {
+      return { isAuth: true, hasAccess: true };
+    }
+
+    // Verificar rol requerido
+    let hasAccess = false;
+    if (requiredRole === 'SELLER') {
+      hasAccess = isSeller;
+    } else if (requiredRole === 'BUYER') {
+      hasAccess = isBuyer;
+    }
+
+    return { isAuth: true, hasAccess };
+  };
+
+  const { isAuth, hasAccess } = checkAccess();
 
   if (loading) {
     return (
@@ -26,14 +59,14 @@ export const PrivateRoute = ({ children, requiredRole }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuth) {
     return <Navigate to="/login" replace />;
   }
 
-  // TODO: Verificar el rol desde el token JWT decodificado
-  // if (requiredRole && userRole !== requiredRole) {
-  //   return <Navigate to="/" replace />;
-  // }
+  // Verificar el rol si se requiere
+  if (requiredRole && !hasAccess) {
+    return <Navigate to="/" replace />;
+  }
 
   return children;
 };

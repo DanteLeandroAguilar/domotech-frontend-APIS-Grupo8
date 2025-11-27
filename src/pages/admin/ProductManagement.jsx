@@ -1,35 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Header } from '../../components/common/Header';
 import { Footer } from '../../components/common/Footer';
 import { ProductForm } from '../../components/admin/ProductForm';
 import { ProductTable } from '../../components/admin/ProductTable';
 import { Loading } from '../../components/common/Loading';
-import { productsAPI } from '../../api/endpoints/products';
+import { fetchAllProducts, createProduct, updateProduct, deleteProduct, updateProductInList } from '../../store/slices/productsSlice';
 import { imagesAPI } from '../../api/endpoints/images';
 import { toast } from 'react-toastify';
 
 const ProductManagement = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { products, loading } = useSelector((state) => state.products);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const data = await productsAPI.getAll(0, 100);
-      // Las imágenes ya vienen en la respuesta del producto
-      setProducts(data.content || []);
-    } catch (error) {
-      console.error('Error al cargar productos:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchAllProducts({ page: 0, size: 100 }));
+  }, [dispatch]);
 
   const handleSubmit = async (formData) => {
     try {
@@ -37,22 +25,38 @@ const ProductManagement = () => {
       let productId;
 
       if (editingProduct) {
-        // Actualizar producto existente
-        await productsAPI.update(editingProduct.productId, productData);
-        productId = editingProduct.productId;
+        // Convertir stock a número antes de actualizar
+        const productDataWithNumberStock = {
+          ...productData,
+          stock: Number(productData.stock)
+        };
         
-        // Actualizar stock si cambió
-        const stockChanged = Number(productData.stock) !== Number(editingProduct.stock);
-        if (stockChanged) {
-          await productsAPI.updateStock(editingProduct.productId, { stock: Number(productData.stock) });
+        // Actualizar producto existente (incluye stock)
+        const updateResult = await dispatch(updateProduct({ 
+          id: editingProduct.productId, 
+          productData: productDataWithNumberStock
+        }));
+        
+        if (updateProduct.rejected.match(updateResult)) {
+          toast.error(updateResult.error?.message || 'Error al actualizar el producto');
+          return;
         }
+        
+        productId = editingProduct.productId;
       } else {
         // Crear nuevo producto
-        const response = await productsAPI.create(productData);
-        productId = response.productId;
+        const createResult = await dispatch(createProduct(productData));
+        
+        if (createProduct.rejected.match(createResult)) {
+          toast.error(createResult.error?.message || 'Error al crear el producto');
+          return;
+        }
+        
+        productId = createResult.payload.productId;
       }
 
       // Procesar imágenes
+      let updatedProduct = null;
       if (images && images.length > 0) {
         // 1. Eliminar imágenes que ya no están (solo para edición)
         if (editingProduct && editingProduct.images) {
@@ -66,7 +70,12 @@ const ProductManagement = () => {
 
           for (const img of imagesToDelete) {
             try {
-              await imagesAPI.delete(img.imageId);
+              const response = await imagesAPI.delete(img.imageId);
+              // El backend retorna el producto actualizado
+              if (response && response.productId) {
+                updatedProduct = response;
+                dispatch(updateProductInList(response));
+              }
             } catch (error) {
               console.error('Error al eliminar imagen:', error);
             }
@@ -75,14 +84,20 @@ const ProductManagement = () => {
 
         // 2. Subir imágenes nuevas
         const newImages = images.filter(img => img.isNew);
-        const uploadedImages = [];
+        let productAfterUpload = null;
+        const existingImageIds = editingProduct?.images?.map(img => img.imageId) || [];
 
         for (const img of newImages) {
           try {
             const formDataImage = new FormData();
             formDataImage.append('file', img.file);
             const response = await imagesAPI.upload(productId, formDataImage);
-            uploadedImages.push(response);
+            // El backend retorna el producto actualizado
+            if (response && response.productId) {
+              productAfterUpload = response;
+              updatedProduct = response;
+              dispatch(updateProductInList(response));
+            }
           } catch (error) {
             console.error('Error al subir imagen:', error);
             toast.error('Error al subir una o más imágenes');
@@ -95,16 +110,36 @@ const ProductManagement = () => {
           try {
             let mainImageId = mainImage.imageId || mainImage.id;
             
-            if (mainImage.isNew) {
-              // Encontrar el ID de la imagen subida correspondiente
-              const uploadedIndex = newImages.findIndex(img => img.id === mainImage.id);
-              if (uploadedIndex !== -1 && uploadedImages[uploadedIndex]) {
-                mainImageId = uploadedImages[uploadedIndex].imageId || uploadedImages[uploadedIndex].id;
+            if (mainImage.isNew && productAfterUpload) {
+              // Si la imagen principal es nueva, buscar su imageId en el producto retornado
+              const productImages = productAfterUpload.images || [];
+              if (productImages.length > 0) {
+                // Obtener todas las imágenes nuevas del producto (que no estaban antes)
+                const newImagesInProduct = productImages.filter(
+                  img => !existingImageIds.includes(img.imageId)
+                );
+                
+                if (newImagesInProduct.length > 0) {
+                  // Si hay múltiples imágenes nuevas, usar el índice de la imagen principal
+                  // en el array de imágenes nuevas para encontrar su correspondiente
+                  const mainImageIndex = newImages.findIndex(img => img.id === mainImage.id);
+                  if (mainImageIndex !== -1 && newImagesInProduct[mainImageIndex]) {
+                    mainImageId = newImagesInProduct[mainImageIndex].imageId;
+                  } else {
+                    // Fallback: usar la primera imagen nueva si no se puede identificar
+                    mainImageId = newImagesInProduct[0]?.imageId;
+                  }
+                }
               }
             }
             
             if (mainImageId && !mainImageId.toString().startsWith('new-')) {
-              await imagesAPI.markAsPrincipal(mainImageId);
+              const response = await imagesAPI.markAsPrincipal(mainImageId);
+              // El backend retorna el producto actualizado
+              if (response && response.productId) {
+                updatedProduct = response;
+                dispatch(updateProductInList(response));
+              }
             }
           } catch (error) {
             console.error('Error al marcar imagen principal:', error);
@@ -115,7 +150,7 @@ const ProductManagement = () => {
       toast.success(editingProduct ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
       setShowForm(false);
       setEditingProduct(null);
-      loadProducts();
+
     } catch (error) {
       console.error('Error al guardar producto:', error);
       toast.error(error.response?.data?.message || 'Error al guardar producto');
@@ -128,16 +163,12 @@ const ProductManagement = () => {
   };
 
   const handleDelete = async (productId) => {
-    if (!window.confirm('¿Estás seguro de eliminar este producto?')) {
-      return;
-    }
-
-    try {
-      await productsAPI.delete(productId);
+    const result = await dispatch(deleteProduct(productId));
+    if (deleteProduct.fulfilled.match(result)) {
       toast.success('Producto eliminado correctamente');
-      loadProducts();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al eliminar producto');
+      // No es necesario recargar, el slice ya actualiza el estado
+    } else if (deleteProduct.rejected.match(result)) {
+      toast.error(result.error?.message || 'Error al eliminar producto');
     }
   };
 

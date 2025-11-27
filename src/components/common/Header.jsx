@@ -1,29 +1,16 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { authAPI } from '../../api/endpoints/auth';
-import { isSeller as authIsSeller, isBuyer as authIsBuyer } from '../../utils/auth';
+import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
 
-export const Header = ({ cartItemsCount = 0 }) => {
+export const Header = () => {
+  const dispatch = useDispatch();
+  const { itemCount } = useSelector((state) => state.cart);
+  const { isAuthenticated, isSeller, isBuyer } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showManagementMenu, setShowManagementMenu] = useState(false);
-
-  useEffect(() => {
-    loadAuthData();
-  }, []);
-
-  const loadAuthData = () => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      setIsAuthenticated(true);
-    }
-  };
-
-  const isSeller = () => authIsSeller();
-  const isBuyer = () => authIsBuyer();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -32,9 +19,8 @@ export const Header = ({ cartItemsCount = 0 }) => {
     }
   };
 
-  const handleLogout = () => {
-    authAPI.logout();
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await dispatch(logout());
     navigate('/');
   };
 
@@ -56,7 +42,7 @@ export const Header = ({ cartItemsCount = 0 }) => {
               <Link to="/catalog" className="text-sm font-medium text-white dark:text-gray-300 hover:text-[#05AFF2] transition-colors">
                 Productos
               </Link>
-              {isSeller() && (
+              {isSeller && (
                 <>
                   <Link to="/admin" className="text-sm font-medium text-white dark:text-gray-300 hover:text-[#05AFF2] transition-colors">
                     Dashboard
@@ -122,12 +108,12 @@ export const Header = ({ cartItemsCount = 0 }) => {
             )}
 
             {/* Carrito (solo para compradores autenticados) */}
-            {isAuthenticated && isBuyer() && (
+            {isAuthenticated && isBuyer && (
               <Link to="/cart" className="relative rounded-lg p-2 text-white dark:text-gray-300 hover:text-yellow-500 transition-colors">
                 <span className="material-symbols-outlined">shopping_cart</span>
-                {cartItemsCount > 0 && (
+                {itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    {cartItemsCount}
+                    {itemCount}
                   </span>
                 )}
               </Link>
