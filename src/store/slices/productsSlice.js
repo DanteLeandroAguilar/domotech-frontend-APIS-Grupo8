@@ -72,18 +72,30 @@ export const checkStock = createAsyncThunk(
 // Thunks para admin (SELLER)
 export const createProduct = createAsyncThunk(
   'products/createProduct',
-  async (productData) => {
-    const response = await productsAPI.create(productData);
-    return response;
+  async (productData, { rejectWithValue }) => {
+    try {
+      const response = await productsAPI.create(productData);
+      return response;
+    } catch (error) {
+      return rejectWithValue({
+        message: error.message || 'Error al crear el producto'
+      });
+    }
   }
 );
 
 export const updateProduct = createAsyncThunk(
   'products/updateProduct',
-  async ({ id, productData }) => {
-    const response = await productsAPI.update(id, productData);
-    return response;
-  }
+  async ({ id, productData }, { rejectWithValue }) => {
+    try {
+      const response = await productsAPI.update(id, productData);
+      return response;
+    } catch (error) {
+      return rejectWithValue({
+        message: error.message || 'Error al actualizar el producto'
+      });
+    }
+    }
 );
 
 export const deleteProduct = createAsyncThunk(
@@ -155,14 +167,14 @@ const productsSlice = createSlice({
         state.currentProduct = updatedProduct;
       }
     },
-  },
+  }, // comienza los extra reducers para manejar los thunks asíncronos donde se llaman las APIs
   extraReducers: (builder) => {
     // Obtener productos con filtros
     builder
       .addCase(fetchProducts.pending, (state) => {
         state.loading = true;
         state.error = null;
-      })
+      }) // si es correcto actualiza el estado/store
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;

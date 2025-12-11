@@ -89,6 +89,13 @@ export const ProductForm = ({ product, onSubmit, onCancel }) => {
       return;
     }
     
+    // Validar longitud mínima de la descripción
+    // const desc = (formData.description || '').trim();
+    // if (desc.length < 10) {
+    //   toast.error('La descripción del producto debe tener al menos 10 caracteres');
+    //   return;
+    // }
+    
     onSubmit({
       ...formData,
       images: images,

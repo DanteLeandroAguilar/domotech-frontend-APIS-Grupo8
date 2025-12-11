@@ -9,19 +9,22 @@ import { fetchAllProducts, createProduct, updateProduct, deleteProduct, updatePr
 import { imagesAPI } from '../../api/endpoints/images';
 import { toast } from 'react-toastify';
 
+// se crea el componente
 const ProductManagement = () => {
   const dispatch = useDispatch();
   const { products, loading } = useSelector((state) => state.products);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
+  // El useEffect se ejecuta cada vez que pase algo con el dispatch (es estatico, solo se ejecuta la primera vez)
   useEffect(() => {
-    dispatch(fetchAllProducts({ page: 0, size: 100 }));
-  }, [dispatch]);
+    dispatch(fetchAllProducts({ page: 0, size: 100 })); // obtiene los datos del backend y los guarda en el store
+  }, [dispatch]); // El array de dependencias incluye dispatch
 
+  // Maneja el envío del formulario para crear o actualizar un producto
   const handleSubmit = async (formData) => {
     try {
-      const { images, ...productData } = formData;
+      const { images, ...productData } = formData; // desempaqueta el producto en imagenes y datos del producto
       let productId;
 
       if (editingProduct) {
@@ -38,7 +41,7 @@ const ProductManagement = () => {
         }));
         
         if (updateProduct.rejected.match(updateResult)) {
-          toast.error(updateResult.error?.message || 'Error al actualizar el producto');
+          toast.error(updateResult.payload?.message || 'Error al actualizar el producto');
           return;
         }
         
@@ -48,7 +51,7 @@ const ProductManagement = () => {
         const createResult = await dispatch(createProduct(productData));
         
         if (createProduct.rejected.match(createResult)) {
-          toast.error(createResult.error?.message || 'Error al crear el producto');
+          toast.error(createResult.payload?.message || 'Error al crear el producto');
           return;
         }
         
@@ -148,8 +151,8 @@ const ProductManagement = () => {
       }
 
       toast.success(editingProduct ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
-      setShowForm(false);
-      setEditingProduct(null);
+      setShowForm(false); 
+      setEditingProduct(null); 
 
     } catch (error) {
       console.error('Error al guardar producto:', error);
